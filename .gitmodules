@@ -1,0 +1,3 @@
+[submodule "VariabilityParityGames"]
+	path = VariabilityParityGames
+	url = git@github.com:Dodecahedra/VariabilityParityGames.git
