@@ -14,7 +14,6 @@ class VPGPPSolver
 {
 public:
     VPGPPSolver(VPGame *game);
-    ~VPGPPSolver();
     void run();
 
     int promotions;
@@ -35,20 +34,16 @@ protected:
     std::vector<std::unordered_map<int, int>> strategy;
     std::vector<std::unordered_map<int, ConfSet>> region;
 
-    void attract(int player, VertexSetZlnk *subV, std::vector<ConfSet> *vc);
+    void attract(int p);
     void promote(int from, int to);
     void resetRegion(int p);
-    bool setupRegion(VertexSetZlnk *bigV, int p, std::vector<ConfSet> *vc);
+    bool setupRegion(int p);
     void setDominion(int p);
     int getRegionStatus(int i, int p);
     void reportRegion();
     void printState();
 
-    void attractQueue(int player, VectorBoolOptimized *bigA, vector<bdd> *ac) const;
+    void attractQueue(int p);
 
-    void removeFromBigV(VectorBoolOptimized *bigA, vector<bdd> *ac) const;
-
-    int closedSubgame(int p, const vector<bdd> &region_confs, int j);
-
-    int findLowestRegion(int p, const vector<bdd> &region_confs, int lowest_region, int j);
+    void removeFromBigV(int p);
 };

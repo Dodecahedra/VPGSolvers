@@ -2,30 +2,50 @@
 // Created by koen on 24-02-21.
 //
 #include "queue"
-
+#include "unordered_map"
 #include "VPG_PP.h"
+#include "Conf.h"
 
 
 VPGPPSolver::VPGPPSolver(VPGame *game):
     game(game) {
-    VPGPPSolver::emptyvertexset = VertexSetZlnk(game->n_nodes);
+    emptyvertexset = VertexSetZlnk(game->n_nodes);
+    V = new VertexSetZlnk(game->n_nodes);
+    C = new vector<ConfSet>(game->n_nodes);
+    // Initialise V and C (initially full sets)
+    for (int i = 0; i < game->n_nodes; i++) {
+        (*V)[i] = true;
+        (*C)[i] = game->bigC;
+    }
 }
 
-void VPGPPSolver::attract(int player, VertexSetZlnk *subV, std::vector<ConfSet> *vc) {
-    removeFromBigV(subV, vc);
-    attractQueue(player, subV, vc);
+void VPGPPSolver::attract(int p) {
+    removeFromBigV(p);
+    attractQueue(p);
 }
 
-void VPGPPSolver::removeFromBigV(VertexSetZlnk *bigA, vector<ConfSet> *ac) const { int a = 0; }
+/**
+ * Removes the region in regions[p] from the game (*V).
+ * @param p parity of the region.
+ */
+void VPGPPSolver::removeFromBigV(int p) {
+    VertexSetZlnk current_region = regions[p];
+    for (int i = 0; i < current_region.size(); i++) {
+        if (current_region[i]) {
+            (*C)[i] -= region[i][p];
+            if ((*C)[i] == emptyset) (*V)[i] = false;
+        }
+    }
+}
 
-void VPGPPSolver::attractQueue(int player, VertexSetZlnk *bigA, std::vector<ConfSet> *ac) const {
+void VPGPPSolver::attractQueue(int p) {
     queue<int> qq;
 #ifdef VertexSetZlnkIsBitVector
     for(int vi = 0;vi<game->n_nodes;vi++){
-        if(!(*bigA)[vi])
+        if(!regions[p][vi])
             continue;
 #else
-        for (const auto& vi : *bigA) {
+        for (const auto& vi : *regions[p]) {
 #endif
         qq.push(vi);
     }
@@ -42,30 +62,43 @@ void VPGPPSolver::attractQueue(int player, VertexSetZlnk *bigA, std::vector<Conf
             // try to attract as many configurations as possible for vertex vi
             ConfSet attracted;
             // This follows the attractor definition precisely, see pseudo code and definitions in the report
-            if(game->owner[vi] == player){
+            if(game->owner[vi] == p%2){
                 attracted = (*C)[vi];
-                attracted &= (*ac)[vii];
+                attracted &= region[vii][p];
                 attracted &= game->edge_guards[gi];
+                // Vertex is owned by player p
+                strategy[vi].emplace(p, vii);
             } else {
                 attracted = (*C)[vi];
                 for(auto & j : game->out_edges[vi]){
                     int target = target(j);
-                    ConfSet s = game->bigC;
-                    ConfSet s2 = game->bigC;
-                    s -= game->edge_guards[edge_index(j)];
-                    s2 -= (*C)[target];
-                    s |= s2;
-                    attracted &= s;
+                    if ((*V)[target]) {
+                        ConfSet s = game->bigC;
+                        ConfSet s2 = game->bigC;
+                        s -= game->edge_guards[edge_index(j)];
+                        s2 &= region[target][p];
+                        s |= s2;
+                        attracted &= s;
+                    }
                 }
             }
             if(attracted == emptyset)
                 continue;
-            if(!(*bigA)[vi]){
+            if(!regions[p][vi]){
                 // add vertex to attracted set
-                (*bigA)[vi] = true;
-                (*ac)[vi] = attracted;
+                regions[p][vi] = true;
+                region[vi][p] |= attracted; // TODO: Check if already inited
+                cout << "Adding to vertex: " << vi << " ";
+                cout << attracted << std::endl;
+                cout << "Vertex had: " << region[vi][game->priority[vi]] << std::endl;
+                region[vi][game->priority[vi]] -= attracted;
             } else {
-                (*ac)[vi] |= attracted;
+                region[vi][p] |= attracted;
+                region[vi][game->priority[i]] -= attracted;
+                cout << "Adding to vertex: " << vi << " ";
+                cout << attracted << std::endl;
+                cout << "Vertex had: " << region[vi][game->priority[vi]] << std::endl;
+                region[vi][game->priority[vi]] -= attracted;
             }
             // remove attracted confs from the game
             (*C)[vi] -= attracted;
@@ -86,20 +119,22 @@ void VPGPPSolver::attractQueue(int player, VertexSetZlnk *bigA, std::vector<Conf
  *  Does not reset if priority of the vertex is set to -1 (if solved).
  */
 void VPGPPSolver::resetRegion(int p) {
-    VertexSetZlnk vertex_set = get<0>(regions[p]);
-    std::vector<ConfSet> conf_set = get<1>(regions[p]);
+    /* TODO:
+     *  [x] Currently vertices are not added back to the VPGame. */
+    VertexSetZlnk vertex_set = regions[p];
     for (int i = 0; i < vertex_set.size(); i++) {
         if (vertex_set[i]) { // If vertex is in the region
-            // Now reset `region` and `regions` vectors
-            for (int j = 0; j < region[i].size(); j++) {
-                if (get<1>(region[i][j]) == p && p != game->priority[i]) { // Now reset Confs of priority p
-                    ConfSet new_conf = (get<0>(region[i][0]) & conf_set[i]);
-                    region[i][0] = std::make_tuple(new_conf, game->priority[i]);
-                    strategy[i][0] = std::make_tuple(new_conf, game->priority[i]);
-                    region[i].erase(region[i].begin() + j);
-                    strategy[i].erase(strategy[i].begin() + j);
-                }
+            // Now reset `region`, `regions` and `strategy` vectors
+            int priority_i = game->priority[i];
+            region[i][priority_i] |= region[i][p];
+            strategy[i].erase(p);
+            if (priority_i != p) {
+                regions[p][i] = false;
+                region[i].erase(p);
             }
+            // Add vertex i and its configuration back to the game.
+            (*V)[i] = true;
+            (*C)[i] |= region[i][priority_i];
         }
     }
 }
@@ -110,14 +145,13 @@ void VPGPPSolver::resetRegion(int p) {
  * @param p
  * @return
  */
-bool VPGPPSolver::setupRegion(VertexSetZlnk *bigV, int p, std::vector<ConfSet> *vc) {
+bool VPGPPSolver::setupRegion(int p) {
     // First, we make sure the region is empty (should always be the case).
-    if (get<0>(regions[p]) != emptyvertexset) resetRegion(p);
 
-    if (*bigV == emptyvertexset) return false;
+    if (regions[p] == emptyvertexset) return false;
     /* TODO:
-     *  In the attractor, also update the strategy vector for each vertex. */
-    attract(p%2, bigV, vc);
+     *  [] In the attractor, also update the strategy vector for each vertex. */
+    attract(p);
     return true;
 }
 
@@ -130,58 +164,38 @@ bool VPGPPSolver::setupRegion(VertexSetZlnk *bigV, int p, std::vector<ConfSet> *
  */
 int VPGPPSolver::getRegionStatus(int i, int p) {
     const int a  = p%2;
-    VertexSetZlnk region_set = get<0>(regions[p]);
-    std::vector<ConfSet> region_confs = get<1>(regions[p]);
+    VertexSetZlnk region_set = regions[p];
     // See if the region is closed in the subgame
+    int lowest_region = -1;
     for (int j = 0; j < region_set.size(); j++) {
         if (region_set[j]) {
             if (game->owner[j] != a) {
-                return closedSubgame(p, region_confs, j);
-            }
-        }
-    }
-
-    // Next, we check if region is closed in entire game
-    int lowest_region = -1;
-    for (int j = 0; j < region_set.size(); j++) { // TODO: deduplicate this with above code (lambda function).
-        if (region_set[j] && game->owner[j] != a) {
-            lowest_region = findLowestRegion(p, region_confs, lowest_region, j);
-        }
-    }
-    return lowest_region;
-}
-
-int VPGPPSolver::findLowestRegion(int p, const vector<bdd> &region_confs, int lowest_region, int j) {
-    ConfSet vertex_confs = region_confs[j];
-    for (auto &v : game->out_edges[j]) {
-        auto &target_region = region[get<0>(v)];
-        ConfSet edge_guard = game->edge_guards[get<1>(v)];
-        for (auto &c : target_region) {
-            ConfSet target_confs = get<0>(c);
-            if ((vertex_confs & edge_guard & target_confs) != emptyset) {
-                int region_priority = get<1>(c);
-                if (region_priority < p &&
-                        (region_priority < lowest_region || lowest_region == -1)) {
-                    lowest_region = region_priority;
+                ConfSet vertex_confs = region[j][p];
+                for (auto &v : game->out_edges[j]) {
+                    /* TODO:
+                     *  This has not yet been updated to handle the new region function. */
+                    ConfSet edge_guard = game->edge_guards[get<1>(v)];
+                    auto it = region[get<0>(v)].begin();
+                    while (it != region[get<0>(v)].end()) {
+                        if ((vertex_confs & edge_guard & it->second) != emptyset) {
+                            int region_priority = it->first;
+                            /* TODO:
+                             *  Currently we set all confs that have been solved to -1. This is why it is sometimes
+                             *  saying the region is open while really it is closed. See if we want to set some other
+                             *  special number for this (if we want to keep track of this at all). */
+                            if (region_priority < p && region_priority != -1) return -2; // Found a reachable vertex of lower priority.
+                            if ((region_priority < lowest_region || lowest_region == -1)
+                                    && region_priority != p) {
+                                lowest_region = region_priority;
+                            }
+                        }
+                        it++;
+                    }
                 }
             }
         }
     }
     return lowest_region;
-}
-
-int VPGPPSolver::closedSubgame(int p, const vector<bdd> &region_confs, int j) {
-    ConfSet vertex_confs = region_confs[j];
-    for (auto &v : game->out_edges[j]) {
-        auto &target_region = region[get<0>(v)];
-        ConfSet edge_guard = game->edge_guards[get<1>(v)];
-        for (auto &c : target_region) {
-            ConfSet target_confs = get<0>(c);
-            if ((vertex_confs & edge_guard & target_confs) != emptyset) {
-                if (get<1>(c) < p) return -2; // Found a reachable vertex of lower priority.
-            }
-        }
-    }
 }
 
 /**
@@ -190,17 +204,26 @@ int VPGPPSolver::closedSubgame(int p, const vector<bdd> &region_confs, int j) {
  * @param to priority we are promoting to.
  */
 void VPGPPSolver::promote(int from, int to) {
-    VertexSetZlnk promote_region = get<0>(regions[from]);
-    std::vector<ConfSet> promote_confs = get<1>(regions[from]);
-    promote_region |= get<0>(regions[to]);
-    for (int i = 0; i < promote_confs.size(); i++) promote_confs[i] |= get<1>(regions[to])[i];
-    regions[to] = std::make_tuple(promote_region, promote_confs);
-    regions[from] = std::make_tuple(emptyvertexset, std::vector<ConfSet>(game->n_nodes));
+    VertexSetZlnk promote_region = regions[from];
+    for (int i = 0; i < promote_region.size(); i++) {
+        if (region[i].count(from)) {
+            /* TODO: check how a bdd is instantiated, otherwise have to check if [to] is already initialised. */
+            cout << "Adding to vertex: " << i << ", promoting from: " << from << " to: " << to << std::endl;
+            cout << region[i][from] << std::endl;
+            cout << "Vertex had: " << region[i][to] << std::endl;
+            region[i][to] |= region[i][from];
+            region[i].erase(from);
+            cout << "Vertex now has: " << region[i][to] << std::endl;
+        }
+    }
+    regions[to] |= promote_region;
+    regions[from] = emptyvertexset;
+
     for (int i = from; i < to; i++) {
         // Reset all regions
         resetRegion(i);
     }
-    attract(from%2, &promote_region, &promote_confs);
+    attract(to);
 }
 
 /**
@@ -209,19 +232,24 @@ void VPGPPSolver::promote(int from, int to) {
  */
 void VPGPPSolver::setDominion(int p) {
     const int a = p%2;
-    VertexSetZlnk v = get<0>(regions[p]);
-    std::vector<ConfSet> c = get<1>(regions[p]);
+    VertexSetZlnk v = regions[p];
     for (int i = 0; i < v.size(); i++) {
         if (v[i]) {
-            /* TODO: Also make sure that we set `region` or other vector to special value to indicate that
-             *       this configuration has already been solved and is no longer part of the subgame.
-             *       (Maybe subtract confs in winning_0 and winning_1 when resetting the game)*/
             if (a) {
-                game->winning_1[i] |= c[i];
+                game->winning_1[i] |= region[i][p];
+                cout << "Winning_1 sets of: ";
+                cout << " " << game->winning_1[i] << " for vertex: " << i << std::endl;
             } else {
-                game->winning_0[i] |= c[i];
+                game->winning_0[i] |= region[i][p];
+                cout << "Winning_0 sets of: ";
+                cout << " " << game->winning_0[i] << " for vertex: " << i << std::endl;
             }
-
+            // Set configurations attracted to regions[p] as solved (-1) and remove p from map.
+            region[i][-1] |= region[i][p];
+//            cout << i << ": " << region[i][-1] << std::endl;
+            region[i].erase(p);
+            /* TODO:
+             *  Currently we don't remove vertices and confs from the underlying game. */
         }
     }
 }
@@ -234,8 +262,6 @@ void VPGPPSolver::run() {
     strategy = std::vector<std::unordered_map<int, int>>(game->n_nodes);
     inverse = new int[max_prio+1];
 
-    // Initialise the strategy array, with entire conf pointing to -1.
-    for (int i = 0; i < game->n_nodes; i++) strategy[i].emplace_back(fullset, -1);
     // Initialise region array, where initially the region of vertex i points to fullset to priority of i.
     for (int i = 0; i < game->n_nodes; i++) {
         region[i][game->priority[i]] = game->bigC;
@@ -250,8 +276,6 @@ void VPGPPSolver::run() {
     while (i < game->n_nodes) {
         int p = game->priority[i];
         inverse[p] = i; // Keep index in case we promote and need to reset.
-        VertexSetZlnk current_region(game->n_nodes);
-        std::vector<ConfSet> *vc = new vector<ConfSet>(game->n_nodes);
         bool reset = true;
         // Look for all vertices of priority p that still have some confs enabled
         while (i < game->n_nodes && game->priority[i] == p) {
@@ -260,13 +284,12 @@ void VPGPPSolver::run() {
             if (region[i][p] != emptyset) reset = false;
             i++;
         }
-        if (i == game->n_nodes) break; // We have run out of vertices to process
         if (reset) continue; // We skip if the region we are considering has no vertex enabled
 
 
         /* Now create the region by attracting nearby vertices and see if the region is
          * open or closed. */
-        if (setupRegion(&current_region, p, vc)) {
+        if (setupRegion(p)) {
             // We created a region, check whether it is open/closed.
             while (true) {
                 int c = getRegionStatus(i, p);
@@ -282,6 +305,7 @@ void VPGPPSolver::run() {
                 } else {
                     /* We found a region which can be promoted. Promote the region to priority c. */
                     promote(p, c);
+                    promotions++;
                     i = inverse[c];
                     p = c;
                 }
