@@ -229,18 +229,19 @@ void VPGPPSolver::setDominion(int p) {
 // Run the solver
 void VPGPPSolver::run() {
     max_prio = game->priority[0];
-    /* TODO:
-     *  Change from vector<ConfSet> to vector<int> which points to index of region vector, making it easier to do
-     *  reset, setDmoninion and other operations. */
-    regions = std::vector<std::tuple<VertexSetZlnk, std::vector<ConfSet>>>(max_prio+1);
-    region = new vector<std::tuple<ConfSet, int>>[game->n_nodes];
-    strategy = new std::vector<std::tuple<ConfSet, int>>[game->n_nodes];
+    regions = std::vector<VertexSetZlnk>(max_prio+1);
+    region =  std::vector<std::unordered_map<int, ConfSet>>(game->n_nodes);
+    strategy = std::vector<std::unordered_map<int, int>>(game->n_nodes);
     inverse = new int[max_prio+1];
 
     // Initialise the strategy array, with entire conf pointing to -1.
     for (int i = 0; i < game->n_nodes; i++) strategy[i].emplace_back(fullset, -1);
     // Initialise region array, where initially the region of vertex i points to fullset to priority of i.
-    for (int i = 0; i < game->n_nodes; i++) region[i].emplace_back(std::make_tuple(fullset, game->priority[i]));
+    for (int i = 0; i < game->n_nodes; i++) {
+        region[i][game->priority[i]] = game->bigC;
+    }
+
+    for (int i = 0; i < max_prio+1; i++) regions[i] = VertexSetZlnk(game->n_nodes);
 
     /** We loop over the vertices and do PP algorithm. We first construct a vector with all the
      * vertices with the same priority. Afterwards, {@code i} always points to the first vertex with
@@ -254,9 +255,9 @@ void VPGPPSolver::run() {
         bool reset = true;
         // Look for all vertices of priority p that still have some confs enabled
         while (i < game->n_nodes && game->priority[i] == p) {
-            (current_region)[i] = true;
-            (*vc)[i] = (*C)[i];
-            if ((*C)[i] != emptyset) reset = false;
+            regions[p][i] = regions[p][i] || (*V)[i]; // Only returns false if all confs have already been attracted.
+            region[i][p] |= (*C)[i];
+            if (region[i][p] != emptyset) reset = false;
             i++;
         }
         if (i == game->n_nodes) break; // We have run out of vertices to process

@@ -6,6 +6,7 @@
 #define VPGSOLVERS_VPG_PP_H
 #include "VPGame.h"
 #include "Conf.h"
+#include "unordered_map"
 
 #endif //VPGSOLVERS_VPG_PP_H
 
@@ -25,14 +26,14 @@ protected:
     VertexSetZlnk *V;
     /** Current configurations of subgame */
     vector<ConfSet> *C;
-    static VertexSetZlnk emptyvertexset;
+    VertexSetZlnk emptyvertexset;
 
     int *inverse;
     int max_prio;
 
-    std::vector<std::tuple<VertexSetZlnk, std::vector<ConfSet>>> regions;
-    std::vector<std::tuple<ConfSet, int>> *strategy;
-    std::vector<std::tuple<ConfSet, int>> *region;
+    std::vector<VertexSetZlnk> regions;
+    std::vector<std::unordered_map<int, int>> strategy;
+    std::vector<std::unordered_map<int, ConfSet>> region;
 
     void attract(int player, VertexSetZlnk *subV, std::vector<ConfSet> *vc);
     void promote(int from, int to);
