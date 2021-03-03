@@ -65,9 +65,13 @@ void VPGame::permute(std::vector<int> &mapping) {
     for (int j = 0; j < mapping.size(); j++) {
         /* For each tuple in `out_edges` list, update the `target` parameter according to new
          * mapping. */
-        for (std::tuple<int,int> &e: out_edges[j]) {
-            int new_index = mapping[get<0>(e)];
-            e = std::make_tuple(new_index, get<1>(e));
+        for (std::tuple<int,int> &oe: out_edges[j]) {
+            int new_index = mapping[get<0>(oe)];
+            oe = std::make_tuple(new_index, get<1>(oe));
+        }
+        for (std::tuple<int,int> &ie : in_edges[j]) {
+            int new_index = mapping[get<0>(ie)];
+            ie = std::make_tuple(new_index, get<1>(ie));
         }
     }
     // Now update the rest of the values (destroys mapping)
@@ -78,6 +82,7 @@ void VPGame::permute(std::vector<int> &mapping) {
             std::swap(owner[i], owner[mapping[i]]);
             std::swap(declared[i], declared[mapping[i]]);;
             std::swap(out_edges[i], out_edges[mapping[i]]);
+            std::swap(in_edges[i], in_edges[mapping[i]]);
             std::swap(mapping[i], mapping[swp]);
         }
 
