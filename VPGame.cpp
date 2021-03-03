@@ -89,7 +89,12 @@ void VPGame::permute(std::vector<int> &mapping) {
     }
 }
 
-
+/**
+ * Reads VPG from file.
+ * IMPORTANT: does not like trailing '\n' characters.
+ * @param filename
+ * @param specificconf
+ */
 void VPGame::parseVPGFromFile(const string &filename, const char *specificconf) {
     int c = 0;
     if(parsePG){
