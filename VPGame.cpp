@@ -16,7 +16,7 @@
 #include <algorithm>
 
 #include "VPGame.h"
-#include "VariabilityParityGames/Algorithms/Datastructures/ConfSetExplicit.h"
+#define PARSER_LINE_SIZE  16777216
 
 void VPGame::set_n_nodes(int nodes) {
     n_nodes = nodes;
@@ -36,7 +36,7 @@ VPGame::VPGame() {
 }
 
 void VPGame::sort() {
-    vector<int> mapping(priority.size(), 0);
+    mapping = std::vector<int>(n_nodes);
     constructMapping(mapping);
     /* Using the identity mapping we just constructed, we now make a permutation mapping, where
      * we sort in descending order of priority. */
@@ -46,7 +46,9 @@ void VPGame::sort() {
         }
     );
     // Now sort all our values according to this mapping.
-    permute(mapping);
+    vector<int> inverse(n_nodes);
+    for (int i = 0; i < mapping.size(); i++) inverse[mapping[i]] = i;
+    permute(inverse);
 }
 
 void VPGame::constructMapping(vector<int> &mapping) const {
@@ -56,15 +58,9 @@ void VPGame::constructMapping(vector<int> &mapping) const {
 }
 
 void VPGame::permute(std::vector<int> &mapping) {
-    cout << "Mapping: " << std::endl;
-    for (int i = 0; i < mapping.size(); i++) {
-        cout << i << " mapped to: " << mapping[i] << std::endl;
-        std::swap(priority[i], priority[mapping[i]]);
-        std::swap(owner[i], owner[mapping[i]]);
-        std::swap(declared[i], declared[mapping[i]]);;
-        std::swap(out_edges[i], out_edges[mapping[i]]);
-    }
-
+    /* TODO:
+     *  Also permute the winning_0, winning_1 and strategy sets accordingly in case we
+     *  permute back to original parity game. */
     // Update the target index in the `out_edges` vector.
     for (int j = 0; j < mapping.size(); j++) {
         /* For each tuple in `out_edges` list, update the `target` parameter according to new
@@ -73,6 +69,18 @@ void VPGame::permute(std::vector<int> &mapping) {
             int new_index = mapping[get<0>(e)];
             e = std::make_tuple(new_index, get<1>(e));
         }
+    }
+    // Now update the rest of the values (destroys mapping)
+    for (int i = 0; i < mapping.size(); i++) {
+        while (i != mapping[i]) {
+            int swp = mapping[i];
+            std::swap(priority[i], priority[swp]);
+            std::swap(owner[i], owner[mapping[i]]);
+            std::swap(declared[i], declared[mapping[i]]);;
+            std::swap(out_edges[i], out_edges[mapping[i]]);
+            std::swap(mapping[i], mapping[swp]);
+        }
+
     }
 }
 
@@ -85,10 +93,10 @@ void VPGame::parseVPGFromFile(const string &filename, const char *specificconf) 
     }
     std::ifstream infile(filename);
 
-    char * s = new char[LINE_MAX];
+    char * s = new char[PARSER_LINE_SIZE];
     while (infile.good())
     {
-        infile.getline(s, LINE_MAX,';');
+        infile.getline(s, PARSER_LINE_SIZE,';');
         if(c == 0){
             // create bigC
             cout << "Found confs: " << s << '\n';

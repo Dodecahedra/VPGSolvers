@@ -57,6 +57,8 @@ public :
     int specificvar;
 
     map<string, ConfSet> parseCache;
+    /** We store the mapping such that we can later get back the original parity game. */
+    vector<int> mapping;
 
     VPGame();
     void set_n_nodes(int nodes);
