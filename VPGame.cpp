@@ -58,9 +58,6 @@ void VPGame::constructMapping(vector<int> &mapping) const {
 }
 
 void VPGame::permute(std::vector<int> &mapping) {
-    /* TODO:
-     *  Also permute the winning_0, winning_1 and strategy sets accordingly in case we
-     *  permute back to original parity game. */
     // Update the target index in the `out_edges` vector.
     for (int j = 0; j < mapping.size(); j++) {
         /* For each tuple in `out_edges` list, update the `target` parameter according to new
@@ -83,6 +80,8 @@ void VPGame::permute(std::vector<int> &mapping) {
             std::swap(declared[i], declared[mapping[i]]);;
             std::swap(out_edges[i], out_edges[mapping[i]]);
             std::swap(in_edges[i], in_edges[mapping[i]]);
+            std::swap(winning_0[i], winning_0[mapping[i]]);
+            std::swap(winning_1[i], winning_1[mapping[i]]);
             std::swap(mapping[i], mapping[swp]);
         }
 
