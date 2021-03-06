@@ -168,11 +168,7 @@ int VPGPPSolver::getRegionStatus(int i, int p) {
                     while (it != region[get<0>(v)].end()) {
                         if ((vertex_confs & edge_guard & it->second) != emptyset) {
                             int region_priority = it->first;
-                            /* TODO:
-                             *  Currently we set all confs that have been solved to -1. This is why it is sometimes
-                             *  saying the region is open while really it is closed. See if we want to set some other
-                             *  special number for this (if we want to keep track of this at all). */
-                            if (region_priority < p && region_priority != -1) return -2; // Found a reachable vertex of lower priority.
+                            if (region_priority < p) return -2; // Found a reachable vertex of lower priority.
                             if ((region_priority < lowest_region || lowest_region == -1)
                                     && region_priority != p) {
                                 lowest_region = region_priority;
@@ -227,7 +223,6 @@ void VPGPPSolver::setDominion(int p) {
                 cout << " " << game->winning_0[i] << " for vertex: " << i << std::endl;
             }
             // Set configurations attracted to regions[p] as solved (-1) and remove p from map.
-            region[i][-1] |= region[i][p];
             region[i].erase(p);
             /* We check that the configuration that we solved is */   assert(((*C)[i] & region[i][p]) == emptyset);
             /* removed from the underlying game. */   assert((*C)[i] == emptyset ? (*V)[i] == false : (*V)[i] == true);
