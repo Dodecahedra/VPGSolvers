@@ -210,22 +210,35 @@ void VPGPPSolver::promote(int from, int to) {
  * @param p the priority of the region that is solved.
  */
 void VPGPPSolver::setDominion(int p) {
+    /* First, we add all the regions back to the game, to compute the attractor in the entire
+     * subgame V. */
+    for (int i = 0; i < regions[p].size(); i ++) {
+        for (auto &t : region[i]) {
+            (*V)[i] = (*V)[i] || regions[t.first][i];
+            (*C)[i] |= t.second;
+        }
+    }
+    attract(p);
     const int a = p%2;
-    cout << "Winning_" << a <<  "sets of: " << std::endl;
     VertexSetZlnk v = regions[p];
     for (int i = 0; i < v.size(); i++) {
         if (v[i]) {
             if (a) {
                 game->winning_1[i] |= region[i][p];
-                cout << " " << game->winning_1[i] << " for vertex: " << i << std::endl;
             } else {
                 game->winning_0[i] |= region[i][p];
-                cout << " " << game->winning_0[i] << " for vertex: " << i << std::endl;
             }
             // Set configurations attracted to regions[p] as solved (-1) and remove p from map.
             region[i].erase(p);
             /* We check that the configuration that we solved is */   assert(((*C)[i] & region[i][p]) == emptyset);
             /* removed from the underlying game. */   assert((*C)[i] == emptyset ? (*V)[i] == false : (*V)[i] == true);
+        }
+    }
+    /* Remove regions from the game and check if regions decreased in size. */
+    for (int i = 0; i < max_prio; i++) regions[i] = VertexSetZlnk(game->n_nodes);
+    for (int i = 0; i < game->n_nodes; i ++) {
+        for (auto &t : region[i]) {
+            region[i].erase(t.first);
         }
     }
 }
