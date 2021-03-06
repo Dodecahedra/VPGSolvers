@@ -1,6 +1,7 @@
 //
 // Created by koen on 24-02-21.
 //
+#include <cassert>
 #include "queue"
 #include "unordered_map"
 #include "VPG_PP.h"
@@ -246,15 +247,14 @@ void VPGPPSolver::setDominion(int p) {
             }
             // Set configurations attracted to regions[p] as solved (-1) and remove p from map.
             region[i][-1] |= region[i][p];
-//            cout << i << ": " << region[i][-1] << std::endl;
             region[i].erase(p);
-            /* TODO:
-             *  Currently we don't remove vertices and confs from the underlying game. */
+            /* We check that the configuration that we solved is */   assert(((*C)[i] & region[i][p]) == emptyset);
+            /* removed from the underlying game. */   assert((*C)[i] == emptyset ? (*V)[i] == false : (*V)[i] == true);
         }
     }
 }
 
-// Run the solver
+
 void VPGPPSolver::run() {
     max_prio = game->priority[0];
     regions = std::vector<VertexSetZlnk>(max_prio+1);
