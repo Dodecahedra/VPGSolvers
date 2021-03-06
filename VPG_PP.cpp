@@ -7,6 +7,9 @@
 #include "VPG_PP.h"
 #include "Conf.h"
 
+/**
+ * Implementation of the priority promotion algorithm for VPGs.
+ */
 
 VPGPPSolver::VPGPPSolver(VPGame *game):
     game(game) {
@@ -88,17 +91,11 @@ void VPGPPSolver::attractQueue(int p) {
             if(!regions[p][vi]){
                 // add vertex to attracted set
                 regions[p][vi] = true;
-                region[vi][p] |= attracted; // TODO: Check if already inited
-                cout << "Adding to vertex: " << vi << " ";
-                cout << attracted << std::endl;
-                cout << "Vertex had: " << region[vi][game->priority[vi]] << std::endl;
+                region[vi][p] |= attracted;
                 region[vi][game->priority[vi]] -= attracted;
             } else {
                 region[vi][p] |= attracted;
                 region[vi][game->priority[i]] -= attracted;
-                cout << "Adding to vertex: " << vi << " ";
-                cout << attracted << std::endl;
-                cout << "Vertex had: " << region[vi][game->priority[vi]] << std::endl;
                 region[vi][game->priority[vi]] -= attracted;
             }
             // remove attracted confs from the game
@@ -120,8 +117,6 @@ void VPGPPSolver::attractQueue(int p) {
  *  Does not reset if priority of the vertex is set to -1 (if solved).
  */
 void VPGPPSolver::resetRegion(int p) {
-    /* TODO:
-     *  [x] Currently vertices are not added back to the VPGame. */
     VertexSetZlnk vertex_set = regions[p];
     for (int i = 0; i < vertex_set.size(); i++) {
         if (vertex_set[i]) { // If vertex is in the region
@@ -141,17 +136,12 @@ void VPGPPSolver::resetRegion(int p) {
 }
 
 /**
- *
- * @param bigV
- * @param p
- * @return
+ * Given a region[p], compute its attractor.
+ * @param p priority of the region we are creating.
+ * @return true if we succesfully setup a region, false if the initial region is empty.
  */
 bool VPGPPSolver::setupRegion(int p) {
-    // First, we make sure the region is empty (should always be the case).
-
     if (regions[p] == emptyvertexset) return false;
-    /* TODO:
-     *  [] In the attractor, also update the strategy vector for each vertex. */
     attract(p);
     return true;
 }
@@ -173,8 +163,6 @@ int VPGPPSolver::getRegionStatus(int i, int p) {
             if (game->owner[j] != a) {
                 ConfSet vertex_confs = region[j][p];
                 for (auto &v : game->out_edges[j]) {
-                    /* TODO:
-                     *  This has not yet been updated to handle the new region function. */
                     ConfSet edge_guard = game->edge_guards[get<1>(v)];
                     auto it = region[get<0>(v)].begin();
                     while (it != region[get<0>(v)].end()) {
@@ -208,20 +196,14 @@ void VPGPPSolver::promote(int from, int to) {
     VertexSetZlnk promote_region = regions[from];
     for (int i = 0; i < promote_region.size(); i++) {
         if (region[i].count(from)) {
-            /* TODO: check how a bdd is instantiated, otherwise have to check if [to] is already initialised. */
-            cout << "Adding to vertex: " << i << ", promoting from: " << from << " to: " << to << std::endl;
-            cout << region[i][from] << std::endl;
-            cout << "Vertex had: " << region[i][to] << std::endl;
             region[i][to] |= region[i][from];
             region[i].erase(from);
-            cout << "Vertex now has: " << region[i][to] << std::endl;
         }
     }
     regions[to] |= promote_region;
     regions[from] = emptyvertexset;
 
     for (int i = from; i < to; i++) {
-        // Reset all regions
         resetRegion(i);
     }
     attract(to);
@@ -233,16 +215,15 @@ void VPGPPSolver::promote(int from, int to) {
  */
 void VPGPPSolver::setDominion(int p) {
     const int a = p%2;
+    cout << "Winning_" << a <<  "sets of: " << std::endl;
     VertexSetZlnk v = regions[p];
     for (int i = 0; i < v.size(); i++) {
         if (v[i]) {
             if (a) {
                 game->winning_1[i] |= region[i][p];
-                cout << "Winning_1 sets of: ";
                 cout << " " << game->winning_1[i] << " for vertex: " << i << std::endl;
             } else {
                 game->winning_0[i] |= region[i][p];
-                cout << "Winning_0 sets of: ";
                 cout << " " << game->winning_0[i] << " for vertex: " << i << std::endl;
             }
             // Set configurations attracted to regions[p] as solved (-1) and remove p from map.
@@ -264,7 +245,7 @@ void VPGPPSolver::run() {
 
     // Initialise region array, where initially the region of vertex i points to fullset to priority of i.
     for (int i = 0; i < game->n_nodes; i++) {
-        region[i][game->priority[i]] = game->bigC;
+        region[i][game->priority[i]] |= game->bigC;
     }
 
     for (int i = 0; i < max_prio+1; i++) regions[i] = VertexSetZlnk(game->n_nodes);
