@@ -23,7 +23,8 @@ protected:
     VPGame *game;
 
     struct progmcomparator {
-        bool operator()(const ProgM& a, ProgM& b) const {
+        bool operator()(const ProgM& a, const ProgM& b) const {
+            // TODO: This loop should be reversed
             for (int i = 0; i < a.size(); i++) {
                 if (a[i] < b[i]) {
                     return true;
@@ -37,6 +38,7 @@ protected:
     vector<map<ProgM, ConfSet, progmcomparator>> U;
     vector<tuple<ConfSet, int>> strategy;
     /** Array containing the progress measure. */
+    progmcomparator ProgMComp;
     vector<int> M;
     vector<int> T;
     int l;
@@ -44,9 +46,9 @@ protected:
     /** Computes the minimum progress measure `m` such that `m ≽(k) U(t)(phi)`. */
     void minProg(int k, pair<ProgM, ConfSet> phi, ProgM &m);
     /** Compute the MIN of two mappings U: ConfSet -> ProgM. */
-    void MIN(map<ProgM, ConfSet> &V, bool &b);
+    void MIN(map<ProgM, ConfSet> &V, int s, bool &b);
     /** Compute the MAX of two mappings U: ConfSet -> ProgM. */
-    void MAX(map<ProgM, ConfSet> &V, bool &b);
+    void MAX(map<ProgM, ConfSet> &V, int s, bool &b);
 
     void writeResult();
 

@@ -38,10 +38,10 @@ VPG_PM::VPG_PM(VPGame *game)
 }
 
 /**
- *
- * @param k
- * @param phi
- * @param m
+ * Finds the progress measure m s.t. `m ≽(k) U(t)(phi)`.
+ * @param k the index we need to compare up to.
+ * @param phi pair of <ProgM, ConfSet> that belongs to U(t)(phi).
+ * @param m Progress Measure that we write the result to.
  */
 void VPG_PM::minProg(int k, pair<ProgM, ConfSet> phi, ProgM &m) {
     ProgM u = get<0>(phi);
@@ -72,41 +72,76 @@ void VPG_PM::minProg(int k, pair<ProgM, ConfSet> phi, ProgM &m) {
 void VPG_PM::setTop(vector<int> &m) { for (int i = 1; i < T.size(); i+=2) m[i] = T[i]; }
 
 /**
- *
- * @param V
- * @param b
+ * Updates the progress measures of U[s] using the new mapping V. Updates the mapping if
+ * V < U[s].
+ * @param V mapping containing the progress measure we just computed for `s`.
+ * @param s the vertex we are updating.
+ * @param b boolean variable which we set to true if we updated one of the progress measures in U.
  */
-void VPG_PM::MIN(map<ProgM, ConfSet> &V, bool &b) {
-    /* TODO:
-     *  Update this function. Should return void and accept a reference to a bool and map. Function
-     *  goes over U and S and take the MIN accordingly. If U has been updates, write to bool. */
+void VPG_PM::MIN(map<ProgM, ConfSet> &V, int s, bool &b) {
+    for (const auto& t : V) {
+        /* Do a reverse search through U[s] and break out of the loop if we find that the progress
+         * measure has become smaller or equal to V[phi]. */
+        for (auto rit = U[s].rbegin(); rit != U[s].rend(); ++rit) {
+            if ((t.second & rit->second) != emptyset) {
+                rit->second = (rit->second - t.second);
+                U[s][t.first] |= (rit->second & t.second);
+                b = true;
+            }
+            if (!ProgMComp(rit->first, t.first)) break;
+        }
+    }
 }
 /**
- *
- * @param V
- * @param b
+ *Updates the progress measures of U[s] using the new mapping V. Updates the mapping if
+ * V > U[s].
+ * @param V mapping containing the progress measure we just computed for `s`.
+ * @param s the vertex we are updating.
+ * @param b boolean variable which we set to true if we updated one of the progress measures in U.
  */
-void VPG_PM::MAX(map<ProgM, ConfSet> &V, bool &b) {
-    /* TODO:
-     *  Update this function. Should return void and accept a reference to a bool and map. Function
-     *  goes over U and S and take the MAX accordingly. If U has been updates, write to bool. */
+void VPG_PM::MAX(map<ProgM, ConfSet> &V, int s, bool &b) {
+    for (const auto& t : V) {
+        /* Iterate trough U[s] and break once we find that the progress measure of t has become
+         * bigger than that in U[s]. */
+        for (auto it = U[s].begin(); it != U[s].end(); ++it) {
+            if ((t.second & it->second) != emptyset) {
+                it->second = (it->second - t.second);
+                U[s][t.first] |= (it->second & t.second);
+                b = true;
+            }
+            if (!ProgMComp(it->first, t.first)) break;
+        }
+    }
 }
 
+/**
+ * Go over U and look whether the vertex `i` is winning for odd (if `m=T`) or if it is won by
+ * player even (`m!=T`) and write it to the `game`.
+ */
 void VPG_PM::writeResult() {
-    /* TODO:
-     *  After algorithm has finished, check the result in U and write winning vertices and configs
-     *  to the game. */
+    for (int i = 0; i < U.size(); i++) {
+        auto t = U[i];
+        for (const auto& ti : t) {
+            if (ti.first[l] == T[l]) { // U[t][i] = T
+                game->winning_1[i] |= ti.second;
+            } else {
+                game->winning_0[i] |= ti.second;
+            }
+        }
+    }
 }
 
 /**
- *
+ * Run the Progress Measure algorithm.
  */
 void VPG_PM::run() {
     // Initialise Q with all vertices in the game.
     queue<int> Q = queue<int>();
-    set<int> Qset = set<int>();
-    for (int i = 0; i < game->n_nodes; i++) { Q.emplace(i); Qset.emplace(i); }
-    // ...
+    set<int> QSet = set<int>();
+    for (int i = 0; i < game->n_nodes; i++) { Q.emplace(i); QSet.emplace(i); }
+    /* Main loop of the algorithm. We try to lift the progress measure for each
+     * vertex which has an out-neighbour which has been updated. QSet contains the
+     * set of vertices in the queue to prevent that a vertex occurs in the queue twice. */
     while (!Q.empty()) {
         int s = Q.front(); Q.pop();
         map<ProgM, ConfSet> V = map<ProgM, ConfSet>();
@@ -122,16 +157,16 @@ void VPG_PM::run() {
             }
             bool updated = false;
             if (game->owner[s]) { // Owner is odd
-                MAX(V, updated);
+                MAX(V, s, updated);
             } else { // Owner is even
-                MIN(V, updated);
+                MIN(V, s, updated);
             }
             if (updated) {
                 for (auto tii : game->in_edges[s]) {
                     int sii = get<0>(tii);
-                    if (Qset.count(sii) != 0) {
+                    if (QSet.count(sii) != 0) {
                         Q.emplace(sii);
-                        Qset.emplace(sii);
+                        QSet.emplace(sii);
                     }
                 }
             }
