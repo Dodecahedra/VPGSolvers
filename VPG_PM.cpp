@@ -28,8 +28,13 @@ VPG_PM::VPG_PM(VPGame *game)
     // Compute the progress measure M.
     for (int i = 0; i < game->n_nodes; i++) {
         int pr = game->priority[i];
-        if (pr%2!=0) M[pr]++;
+        if (pr%2!=0) {
+            M[pr]++;
+            T[pr]++;
+        }
     }
+    // We set T to be one higher than M.
+    T[l]++;
 }
 
 /**

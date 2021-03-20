@@ -38,6 +38,7 @@ protected:
     vector<tuple<ConfSet, int>> strategy;
     /** Array containing the progress measure. */
     vector<int> M;
+    vector<int> T;
     int l;
 
     /** Computes the minimum progress measure `m` such that `m ≽(k) U(t)(phi)`. */
