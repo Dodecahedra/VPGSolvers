@@ -10,8 +10,7 @@
 
 #endif //VPGSOLVERS_VPG_PP_H
 
-class VPGPPSolver
-{
+class VPGPPSolver {
 public:
     VPGPPSolver(VPGame *game);
     void run();
@@ -30,9 +29,9 @@ protected:
     int *inverse;
     int max_prio;
 
-    std::vector<VertexSetZlnk> regions;
-    std::vector<std::unordered_map<int, int>> strategy;
-    std::vector<std::unordered_map<int, ConfSet>> region;
+    vector<VertexSetZlnk> regions;
+    vector<unordered_map<int, int>> strategy;
+    vector<unordered_map<int, ConfSet>> region;
 
     void attract(int p);
     void promote(int from, int to);

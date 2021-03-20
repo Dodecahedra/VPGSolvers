@@ -237,9 +237,7 @@ void VPGPPSolver::setDominion(int p) {
     /* Remove regions from the game and check if regions decreased in size. */
     for (int i = 0; i < max_prio; i++) regions[i] = VertexSetZlnk(game->n_nodes);
     for (int i = 0; i < game->n_nodes; i ++) {
-        for (auto &t : region[i]) {
-            region[i].erase(t.first);
-        }
+        region[i].clear();
     }
 }
 
@@ -262,6 +260,7 @@ void VPGPPSolver::run() {
      * vertices with the same priority. Afterwards, {@code i} always points to the first vertex with
      * priority < p. */
     int i = 0;
+    promotions = 0;
     while (i < game->n_nodes) {
         int p = game->priority[i];
         inverse[p] = i; // Keep index in case we promote and need to reset.
