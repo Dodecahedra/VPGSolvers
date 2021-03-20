@@ -39,12 +39,37 @@ VPG_PM::VPG_PM(VPGame *game)
 
 /**
  *
+ * @param k
+ * @param phi
+ * @param m
  */
-void VPG_PM::minProg(int k, int t, ConfSet &phi, ProgM &m) {
-    /* TODO:
-     *  Implement function to return smallest m s.t. `m ≽(k) U(t)(phi)`. */
-
+void VPG_PM::minProg(int k, pair<ProgM, ConfSet> phi, ProgM &m) {
+    ProgM u = get<0>(phi);
+    bool keep = (k+1)%2;
+    if (u[l] == T[l]) { // If progress measure u=T, then set m=T and return.
+        setTop(m);
+        return;
+    }
+    /* We only go over the odd places in m.
+     * TODO: only store odd indices of m.*/
+    for (int i = 1; i < k; i += 2) {
+        if (k%2==0) { // k is even
+            m[i] = u[i];
+        } else { // k is odd
+            if (keep) {
+                m[i] = u[i];
+            } else if (u[i] < M[i]) {
+                m[i] = u[i] + 1;
+                keep = true;
+            }
+        }
+    }
+    if (!keep) {
+        setTop(m);
+    }
 }
+
+void VPG_PM::setTop(vector<int> &m) { for (int i = 1; i < T.size(); i+=2) m[i] = T[i]; }
 
 /**
  *
@@ -91,7 +116,7 @@ void VPG_PM::run() {
                 bdd psi = (p.second & game->edge_guards[guard]);
                 if (psi != emptyset) {
                     ProgM m = vector<int>(l);
-                    minProg(game->priority[s], target, p.second, m);
+                    minProg(game->priority[s], p, m);
                     V[m] = p.second;
                 }
             }

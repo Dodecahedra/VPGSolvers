@@ -42,13 +42,15 @@ protected:
     int l;
 
     /** Computes the minimum progress measure `m` such that `m ≽(k) U(t)(phi)`. */
-    void minProg(int k, int t, ConfSet &phi, vector<int> &m);
+    void minProg(int k, pair<ProgM, ConfSet> phi, ProgM &m);
     /** Compute the MIN of two mappings U: ConfSet -> ProgM. */
     void MIN(map<ProgM, ConfSet> &V, bool &b);
     /** Compute the MAX of two mappings U: ConfSet -> ProgM. */
     void MAX(map<ProgM, ConfSet> &V, bool &b);
 
     void writeResult();
+
+    void setTop(vector<int> &m);
 };
 
 
