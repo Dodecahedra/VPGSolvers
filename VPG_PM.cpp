@@ -4,6 +4,7 @@
 
 #include <queue>
 #include <set>
+#include <cassert>
 #include "VPG_PM.h"
 
 /**
@@ -24,7 +25,9 @@ VPG_PM::VPG_PM(VPGame *game)
          * efficiently update only progress measures smaller/bigger than a given value. */
         U[i] = m;
     }
+    Z = vector<int>(l+1);
     M = vector<int>(l+1);
+    T = vector<int>(l+1);
     // Compute the progress measure M.
     for (int i = 0; i < game->n_nodes; i++) {
         int pr = game->priority[i];
@@ -52,7 +55,7 @@ void VPG_PM::minProg(int k, pair<ProgM, ConfSet> phi, ProgM &m) {
     }
     /* We only go over the odd places in m.
      * TODO: only store odd indices of m.*/
-    for (int i = 1; i < k; i += 2) {
+    for (int i = 1; i <= k; i += 2) {
         if (k%2==0) { // k is even
             m[i] = u[i];
         } else { // k is odd
@@ -69,7 +72,7 @@ void VPG_PM::minProg(int k, pair<ProgM, ConfSet> phi, ProgM &m) {
     }
 }
 
-void VPG_PM::setTop(vector<int> &m) { for (int i = 1; i < T.size(); i+=2) m[i] = T[i]; }
+void VPG_PM::setTop(vector<int> &m) { for (int i = 1; i < T.size(); i++) m[i] = T[i]; }
 
 /**
  * Updates the progress measures of U[s] using the new mapping V. Updates the mapping if
@@ -78,17 +81,33 @@ void VPG_PM::setTop(vector<int> &m) { for (int i = 1; i < T.size(); i+=2) m[i] =
  * @param s the vertex we are updating.
  * @param b boolean variable which we set to true if we updated one of the progress measures in U.
  */
-void VPG_PM::MIN(map<ProgM, ConfSet> &V, int s, bool &b) {
-    for (const auto& t : V) {
-        /* Do a reverse search through U[s] and break out of the loop if we find that the progress
-         * measure has become smaller or equal to V[phi]. */
-        for (auto rit = U[s].rbegin(); rit != U[s].rend(); ++rit) {
-            if ((t.second & rit->second) != emptyset) {
-                rit->second = (rit->second - t.second);
-                U[s][t.first] |= (rit->second & t.second);
-                b = true;
+void VPG_PM::MIN(map<ProgM, ConfSet, progmcomparator> &W, map<ProgM, ConfSet, progmcomparator> &V, int s) {
+    if (W.empty()) {
+        for (const auto& t : V) {
+            W[t.first] |= t.second;
+        }
+        return;
+    }
+    ConfSet C = game->bigC; auto N = map<ProgM, ConfSet, progmcomparator>();
+    for (auto & v : V) {
+        if (C == emptyset) break;
+        auto m = v.first; auto c = v.second;
+        for (auto & w : W) {
+            if ((c & w.second & C) != emptyset) {
+                N[w.first] = (w.second & C) - c;
+                N[v.first] |= (c & w.second & C);
+                C -= (c & w.second);
+                c -= w.second;
+            } else {
+                N[w.first] |= w.second;
             }
-            if (!ProgMComp(rit->first, t.first)) break;
+        }
+        N[m] |= c;
+    }
+    for (auto &n : N) {
+        W.erase(n.first);
+        if (n.second != emptyset) {
+            W[n.first] |= n.second;
         }
     }
 }
@@ -99,19 +118,57 @@ void VPG_PM::MIN(map<ProgM, ConfSet> &V, int s, bool &b) {
  * @param s the vertex we are updating.
  * @param b boolean variable which we set to true if we updated one of the progress measures in U.
  */
-void VPG_PM::MAX(map<ProgM, ConfSet> &V, int s, bool &b) {
-    for (const auto& t : V) {
-        /* Iterate trough U[s] and break once we find that the progress measure of t has become
-         * bigger than that in U[s]. */
-        for (auto it = U[s].begin(); it != U[s].end(); ++it) {
-            if ((t.second & it->second) != emptyset) {
-                it->second = (it->second - t.second);
-                U[s][t.first] |= (it->second & t.second);
-                b = true;
+void VPG_PM::MAX(map<ProgM, ConfSet, progmcomparator> &W, map<ProgM, ConfSet, progmcomparator> &V, int s) {
+    if (W.empty()) {
+        for (const auto& t : V) {
+            W[t.first] |= t.second;
+        }
+        return;
+    }
+    ConfSet C = game->bigC; auto N = map<ProgM, ConfSet, progmcomparator>();
+    for (auto v = V.rbegin(); v != V.rend(); ++v) {
+        if (C == emptyset) break;
+        auto m = v->first; auto c = v->second;
+        for (auto & w : W) {
+            if ((c & w.second & C) != emptyset) {
+                N[w.first] = (w.second & C) - c;
+                N[v->first] |= (c & w.second & C);
+                C -= (c & w.second);
+                c -= w.second;
+            } else {
+                N[w.first] |= w.second;
             }
-            if (!ProgMComp(it->first, t.first)) break;
+        }
+        N[m] |= c;
+    }
+    for (auto &n : N) {
+        W.erase(n.first);
+        if (n.second != emptyset) {
+            W[n.first] |= n.second;
         }
     }
+}
+
+/**
+ *
+ * @param W
+ */
+void VPG_PM::fillInW(map<vector<int>, bdd, progmcomparator> &W) {
+    ConfSet all = emptyset;
+    for (auto &t : W) {
+//        assert((all & t.second)==emptyset);
+        all |= t.second;
+    }
+    ConfSet remainder = game->bigC - all;
+    if (remainder != emptyset) W[Z] |= remainder;
+}
+
+/**
+ * Function to write mapping W to U.
+ * @param W
+ */
+void VPG_PM::updateU(map<ProgM, ConfSet, progmcomparator> &W, int s, bool &updated) {
+
 }
 
 /**
@@ -142,32 +199,59 @@ void VPG_PM::run() {
     /* Main loop of the algorithm. We try to lift the progress measure for each
      * vertex which has an out-neighbour which has been updated. QSet contains the
      * set of vertices in the queue to prevent that a vertex occurs in the queue twice. */
+    auto V = map<ProgM, ConfSet, progmcomparator>();
+    auto W = map<ProgM, ConfSet, progmcomparator>();
     while (!Q.empty()) {
-        int s = Q.front(); Q.pop();
-        map<ProgM, ConfSet> V = map<ProgM, ConfSet>();
+        int s = Q.front(); Q.pop(); QSet.erase(s);
+        W.clear();
         for (auto ss: game->out_edges[s]) {
+            V.clear();
             int target = get<0>(ss); int guard = get<1>(ss);
+            /* We compute the new V mapping for edge s->s' after which we update W=MAX(W,V). */
             for (auto& p : U[target]) {
-                bdd psi = (p.second & game->edge_guards[guard]);
+                ConfSet psi = (p.second & game->edge_guards[guard]);
                 if (psi != emptyset) {
-                    ProgM m = vector<int>(l);
+                    cout << p.second << std::endl;
+                    for (int x : p.first) cout << x << " ";
+                    cout << std::endl;
+                    ProgM m = vector<int>(l+1);
                     minProg(game->priority[s], p, m);
-                    V[m] = p.second;
+                    V[m] |= psi;
+                    cout << psi << std::endl;
                 }
             }
-            bool updated = false;
             if (game->owner[s]) { // Owner is odd
-                MAX(V, s, updated);
+                MAX(W, V, s);
+                cout << "";
             } else { // Owner is even
-                MIN(V, s, updated);
+                MIN(W, V, s);
+                cout << "";
             }
-            if (updated) {
-                for (auto tii : game->in_edges[s]) {
-                    int sii = get<0>(tii);
-                    if (QSet.count(sii) != 0) {
-                        Q.emplace(sii);
-                        QSet.emplace(sii);
-                    }
+        }
+        fillInW(W);
+        bool updated = false;
+        /* TODO:
+         *  We are updating U incorrectly. It should be  MAX(U,W)*/
+        updateU(W, s, updated);
+        cout << "State s=" << s << std::endl;
+        for (auto &u : U[s]) {
+            cout << u.second << "For Progress Measure: ( ";
+            for (int i : u.first) {
+                cout << i << " ";
+            }
+            cout << ")" << std::endl;
+        }
+        if(updated) {
+            /* We check if our new Progress Measure mapping is different than we mapping we already have
+             * for U[s]. If this is the case, we update U[s] with W. */
+            /* TODO:
+             *  Technically W should be defined for all configurations in U[s]. Check if we can do this
+             *  updating in a simpler way. */
+            for (auto tii : game->in_edges[s]) {
+                int sii = get<0>(tii);
+                if (QSet.count(sii) == 0) {
+                    Q.emplace(sii);
+                    QSet.emplace(sii);
                 }
             }
         }

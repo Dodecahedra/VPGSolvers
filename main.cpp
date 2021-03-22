@@ -5,6 +5,7 @@
 #include <chrono>
 #include "VPGame.h"
 #include "VPG_PP.h"
+#include "VPG_PM.h"
 
 unordered_map<string, string> winningmap;
 string vertex;
@@ -54,13 +55,15 @@ int main(int argc, char** argv) {
     // Make sure the game is sorted
     auto start = std::chrono::high_resolution_clock::now();
     game.sort();
-    VPGPPSolver solver(&game);
-    solver.run(); // Run the solver, should finish and write solution to VPGame
+//    VPGPPSolver solver(&game);
+//    solver.run(); // Run the solver, should finish and write solution to VPGame
+    VPG_PM solver(&game);
+    solver.run();
     auto end = std::chrono::high_resolution_clock::now();
     auto running_time = std::chrono::duration_cast<std::chrono::nanoseconds>(end - start);
     game.permute(game.mapping);
     printSolution(game.winning_0, 0);
     printSolution(game.winning_1, 1);
     cout << "Solving took: " << running_time.count() << " ns" << std::endl;
-    cout << "Using: " << solver.promotions << " promotions" << std::endl;
+//    cout << "Using: " << solver.promotions << " promotions" << std::endl;
 }
