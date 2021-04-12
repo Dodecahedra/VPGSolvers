@@ -26,7 +26,7 @@ protected:
         bool operator()(const ProgM& a, const ProgM& b) const {
             /* Do a reverse comparison of the two arrays. Last index stores the
              * most significant measure. */
-            for (int i = a.size()-1; i >= 0; i--) {
+            for (int i = 0; i < a.size(); i++) {
                 if (a[i] != b[i]) {
                     return a[i] < b[i];
                 }
@@ -62,9 +62,11 @@ protected:
     /** Computes the minimum progress measure `m` such that `m ≽(k) U(t)(phi)`. */
     void minProg(int k, pair<ProgM, ConfSet> phi, ProgM &m);
     /** Compute the MIN of two mappings U: ConfSet -> ProgM. */
-    void MIN(map<ProgM, ConfSet, progmcomparator> &W, map<ProgM, ConfSet, progmcomparator> &V, int s);
+    void MIN(map<ProgM, ConfSet, progmcomparator> &W, map<ProgM, ConfSet, progmcomparator> &V);
     /** Compute the MAX of two mappings U: ConfSet -> ProgM. */
-    void MAX(map<ProgM, ConfSet, progmcomparator> &W, map<ProgM, ConfSet, progmcomparator> &V, int s);
+    void MAX(map<ProgM, ConfSet, progmcomparator> &W, map<ProgM, ConfSet, progmcomparator> &V);
+
+    int findHighestPriority();
 
     void writeResult();
 
