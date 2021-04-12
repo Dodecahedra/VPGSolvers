@@ -313,9 +313,11 @@ void VPGame::parseVertex(char *line) {
             out_edges[index].resize(outindex + 1);
             out_edges[index][outindex] = std::make_tuple(target, guardindex);
 
-//            int inindex = in_edges[target].size();
-//            in_edges[target].resize(inindex+1);
-//            in_edges[target][inindex] = std::make_tuple(index, guardindex);
+            /* FIXME:
+             *  Read in in_edges. Currently sorting of these in_edges is incorrect. */
+            int inindex = in_edges[target].size();
+            in_edges[target].resize(inindex+1);
+            in_edges[target][inindex] = std::make_tuple(index, guardindex);
 //            cout<< "with edge to " << target << " allowing: ";
 //            dumpSet(&edge_guards[guardindex], fullset, new char[bm_n_vars+1], 0);
         }
