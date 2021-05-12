@@ -179,19 +179,6 @@ void VPG_PM::MAX(map<ProgM, ConfSet, progmcomparator> &W, map<ProgM, ConfSet, pr
 }
 
 /**
- *
- * @param W
- */
-void VPG_PM::fillInW(map<vector<int>, bdd, progmcomparator> &W) {
-    ConfSet all = emptyset;
-    for (auto &t : W) {
-        all |= t.second;
-    }
-    ConfSet remainder = game->bigC - all;
-    if (remainder != emptyset) W[bottom] |= remainder;
-}
-
-/**
  * Function to write mapping W to U.
  * @param W
  */
@@ -275,7 +262,6 @@ void VPG_PM::run() {
                 MIN(W, V);
             }
         }
-        fillInW(W); // In case our mapping is not complete, add 0's.
         bool updated = false;
         /* We try to update our mapping U[s] using the newly computed progress measures in W. Where U[s]=MAX(U[s],W).
          * If we updated one of the values in U[s], `updated` will be set to true. */

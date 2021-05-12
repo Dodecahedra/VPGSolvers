@@ -77,7 +77,6 @@ protected:
 
     void updateU(map<ProgM, ConfSet, progmcomparator> &W, int s, bool &updated);
 
-    void fillInW(map<ProgM, ConfSet, progmcomparator> &W);
 };
 
 
