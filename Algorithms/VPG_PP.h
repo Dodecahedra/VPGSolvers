@@ -4,8 +4,8 @@
 
 #ifndef VPGSOLVERS_VPG_PP_H
 #define VPGSOLVERS_VPG_PP_H
-#include "VPGame.h"
-#include "Conf.h"
+#include "../VPGame.h"
+#include "../Conf.h"
 #include "unordered_map"
 
 #endif //VPGSOLVERS_VPG_PP_H
@@ -45,4 +45,6 @@ protected:
     void attractQueue(int p);
 
     void removeFromBigV(int p);
+
+    void setUpRegion();
 };

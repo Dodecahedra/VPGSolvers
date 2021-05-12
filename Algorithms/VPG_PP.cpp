@@ -5,7 +5,6 @@
 #include "queue"
 #include "unordered_map"
 #include "VPG_PP.h"
-#include "Conf.h"
 
 /**
  * Implementation of the priority promotion algorithm for VPGs.
@@ -236,9 +235,7 @@ void VPGPPSolver::setDominion(int p) {
     }
     /* Remove regions from the game and check if regions decreased in size. */
     for (int i = 0; i < max_prio; i++) regions[i] = VertexSetZlnk(game->n_nodes);
-    for (int i = 0; i < game->n_nodes; i ++) {
-        region[i].clear();
-    }
+    cout << "";
 }
 
 
@@ -250,9 +247,7 @@ void VPGPPSolver::run() {
     inverse = new int[max_prio+1];
 
     // Initialise region array, where initially the region of vertex i points to fullset to priority of i.
-    for (int i = 0; i < game->n_nodes; i++) {
-        region[i][game->priority[i]] |= game->bigC;
-    }
+    setUpRegion();
 
     for (int i = 0; i < max_prio+1; i++) regions[i] = VertexSetZlnk(game->n_nodes);
 
@@ -302,5 +297,11 @@ void VPGPPSolver::run() {
             // Region was empty, go to the next priority.
             continue;
         }
+    }
+}
+
+void VPGPPSolver::setUpRegion() {
+    for (int i = 0; i < game->n_nodes; i++) {
+        VPGPPSolver::region[i][game->priority[i]] |= (*C)[i];
     }
 }

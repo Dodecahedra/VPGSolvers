@@ -4,8 +4,8 @@
 
 #ifndef VPGSOLVERS_VPG_PM_H
 #define VPGSOLVERS_VPG_PM_H
-#include "VPGame.h"
-#include "Conf.h"
+#include "../VPGame.h"
+#include "../Conf.h"
 #define ProgM vector<int>
 /**
  * Declaration of the Progress Measures algorithm for Variability Parity Games.

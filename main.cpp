@@ -4,8 +4,8 @@
 
 #include <chrono>
 #include "VPGame.h"
-#include "VPG_PP.h"
-#include "VPG_PM.h"
+#include "Algorithms/VPG_PP.h"
+#include "Algorithms/VPG_PM.h"
 
 unordered_map<string, string> winningmap;
 string vertex;
@@ -52,18 +52,23 @@ int main(int argc, char** argv) {
     VPGame game;
     // Read in the game
     game.parseVPGFromFile(argv[1]);
+    bool sort = false;
     // Make sure the game is sorted
     auto start = std::chrono::high_resolution_clock::now();
-    game.sort();
-//    VPGPPSolver solver(&game);
-//    solver.run(); // Run the solver, should finish and write solution to VPGame
-    VPG_PM solver(&game);
-    solver.run();
+    /** Select solver we are running */
+    if (*argv[2] == 'M') {
+        VPG_PM solver (&game);
+        solver.run();
+    } else if (*argv[2] == 'P') {
+        sort = true;
+        game.sort();
+        VPGPPSolver solver(&game);
+        solver.run();
+    }
     auto end = std::chrono::high_resolution_clock::now();
     auto running_time = std::chrono::duration_cast<std::chrono::nanoseconds>(end - start);
-    game.permute(game.mapping);
+    if (sort) game.permute(game.mapping);
     printSolution(game.winning_0, 0);
     printSolution(game.winning_1, 1);
     cout << "Solving took: " << running_time.count() << " ns" << std::endl;
-//    cout << "Using: " << solver.promotions << " promotions" << std::endl;
 }

@@ -7,7 +7,8 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY_RELEASE ../bin/)
 add_executable(VPGSolvers_PP
         main.cpp
         VPGame.h VPGame.cpp
-        VPG_PP.h VPG_PP.cpp
+        Algorithms/VPG_PP.h Algorithms/VPG_PP.cpp
+        Algorithms/VPG_PM.h Algorithms/VPG_PM.cpp
         Conf.h
         VariabilityParityGames/Algorithms/Datastructures/ConfSetExplicit.h
         VariabilityParityGames/Algorithms/Datastructures/ConfSetExplicit.cpp
@@ -15,8 +16,8 @@ add_executable(VPGSolvers_PP
 add_executable(VPGSolvers_PM
         main.cpp
         VPGame.h VPGame.cpp
-        VPG_PP.h VPG_PP.cpp
-        VPG_PM.h VPG_PM.cpp
+        Algorithms/VPG_PP.h Algorithms/VPG_PP.cpp
+        Algorithms/VPG_PM.h Algorithms/VPG_PM.cpp
         Conf.h
         VariabilityParityGames/Algorithms/Datastructures/ConfSetExplicit.h
         VariabilityParityGames/Algorithms/Datastructures/ConfSetExplicit.cpp
