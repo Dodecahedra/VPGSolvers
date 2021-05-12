@@ -62,7 +62,7 @@ int main(int argc, char** argv) {
     } else if (*argv[2] == 'P') {
         sort = true;
         game.sort();
-        VPGPPSolver solver(&game);
+        VPG_PP solver(&game);
         solver.run();
     }
     auto end = std::chrono::high_resolution_clock::now();

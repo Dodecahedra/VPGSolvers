@@ -10,7 +10,7 @@
  * Implementation of the priority promotion algorithm for VPGs.
  */
 
-VPGPPSolver::VPGPPSolver(VPGame *game):
+VPG_PP::VPG_PP(VPGame *game):
     game(game) {
     emptyvertexset = VertexSetZlnk(game->n_nodes);
     V = new VertexSetZlnk(game->n_nodes);
@@ -22,7 +22,7 @@ VPGPPSolver::VPGPPSolver(VPGame *game):
     }
 }
 
-void VPGPPSolver::attract(int p) {
+void VPG_PP::attract(int p) {
     removeFromBigV(p);
     attractQueue(p);
 }
@@ -31,7 +31,7 @@ void VPGPPSolver::attract(int p) {
  * Removes the region in regions[p] from the game (*V).
  * @param p parity of the region.
  */
-void VPGPPSolver::removeFromBigV(int p) {
+void VPG_PP::removeFromBigV(int p) {
     VertexSetZlnk current_region = regions[p];
     for (int i = 0; i < current_region.size(); i++) {
         if (current_region[i]) {
@@ -41,7 +41,7 @@ void VPGPPSolver::removeFromBigV(int p) {
     }
 }
 
-void VPGPPSolver::attractQueue(int p) {
+void VPG_PP::attractQueue(int p) {
     queue<int> qq;
 #ifdef VertexSetZlnkIsBitVector
     for(int vi = 0;vi<game->n_nodes;vi++){
@@ -115,7 +115,7 @@ void VPGPPSolver::attractQueue(int p) {
  * @summary Goes over all <vertex,Conf> pairs in regions[p] and resets those to the original priority.
  *  Does not reset if priority of the vertex is set to -1 (if solved).
  */
-void VPGPPSolver::resetRegion(int p) {
+void VPG_PP::resetRegion(int p) {
     VertexSetZlnk vertex_set = regions[p];
     for (int i = 0; i < vertex_set.size(); i++) {
         if (vertex_set[i]) { // If vertex is in the region
@@ -139,7 +139,7 @@ void VPGPPSolver::resetRegion(int p) {
  * @param p priority of the region we are creating.
  * @return true if we succesfully setup a region, false if the initial region is empty.
  */
-bool VPGPPSolver::setupRegion(int p) {
+bool VPG_PP::setupRegion(int p) {
     if (regions[p] == emptyvertexset) return false;
     attract(p);
     return true;
@@ -152,7 +152,7 @@ bool VPGPPSolver::setupRegion(int p) {
  * @return  -2 if region is open, -1 if region is closed and priority c if we
  *          can promote the region to priority c.
  */
-int VPGPPSolver::getRegionStatus(int i, int p) {
+int VPG_PP::getRegionStatus(int i, int p) {
     const int a  = p%2;
     VertexSetZlnk region_set = regions[p];
     // See if the region is closed in the subgame
@@ -187,7 +187,7 @@ int VPGPPSolver::getRegionStatus(int i, int p) {
  * @param from priority that we are promoting from.
  * @param to priority we are promoting to.
  */
-void VPGPPSolver::promote(int from, int to) {
+void VPG_PP::promote(int from, int to) {
     VertexSetZlnk promote_region = regions[from];
     for (int i = 0; i < promote_region.size(); i++) {
         if (region[i].count(from)) {
@@ -208,7 +208,7 @@ void VPGPPSolver::promote(int from, int to) {
  * Set all vertices with configurations Confs to solved for player p%2.
  * @param p the priority of the region that is solved.
  */
-void VPGPPSolver::setDominion(int p) {
+void VPG_PP::setDominion(int p) {
     /* First, we add all the regions back to the game, to compute the attractor in the entire
      * subgame V. */
     for (int i = 0; i < regions[p].size(); i ++) {
@@ -239,7 +239,7 @@ void VPGPPSolver::setDominion(int p) {
 }
 
 
-void VPGPPSolver::run() {
+void VPG_PP::run() {
     max_prio = game->priority[0];
     regions = std::vector<VertexSetZlnk>(max_prio+1);
     region =  std::vector<std::unordered_map<int, ConfSet>>(game->n_nodes);
@@ -300,8 +300,8 @@ void VPGPPSolver::run() {
     }
 }
 
-void VPGPPSolver::setUpRegion() {
+void VPG_PP::setUpRegion() {
     for (int i = 0; i < game->n_nodes; i++) {
-        VPGPPSolver::region[i][game->priority[i]] |= (*C)[i];
+        VPG_PP::region[i][game->priority[i]] |= (*C)[i];
     }
 }

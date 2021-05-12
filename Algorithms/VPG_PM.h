@@ -9,9 +9,11 @@
 #define ProgM vector<int>
 /**
  * Declaration of the Progress Measures algorithm for Variability Parity Games.
- * Algorithm uses the notion of Progress Measures to calculate which vertices and configurations
+ * This algorithm uses the notion of Progress Measures to calculate which vertices and configurations
  * are winning for player 0/1. Based on the description of the Progress Measure algorithm as described
- * in `Featured Games` by Uli Fahrenberg and Axel Legay.
+ * in [1]`Featured Games` by Uli Fahrenberg and Axel Legay.
+ *
+ * [1] https://arxiv.org/abs/2005.05666v2
  */
 class VPG_PM {
 public:
@@ -22,6 +24,7 @@ protected:
     /** Parity Game we are solving. */
     VPGame *game;
 
+    /** */
     struct progmcomparator {
         bool operator()(const ProgM& a, const ProgM& b) const {
             /* Do a reverse comparison of the two arrays. Last index stores the
@@ -55,9 +58,9 @@ protected:
     progmcomparator ProgMComp;
     equiv equiv;
     vector<int> M;
-    vector<int> Z;
-    vector<int> T;
-    int l;
+    vector<int> bottom;
+    vector<int> top;
+    int d;
 
     /** Computes the minimum progress measure `m` such that `m ≽(k) U(t)(phi)`. */
     void minProg(int k, pair<ProgM, ConfSet> phi, ProgM &m);

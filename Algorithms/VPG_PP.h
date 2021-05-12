@@ -10,9 +10,12 @@
 
 #endif //VPGSOLVERS_VPG_PP_H
 
-class VPGPPSolver {
+/**
+ *
+ */
+class VPG_PP {
 public:
-    VPGPPSolver(VPGame *game);
+    VPG_PP(VPGame *game);
     void run();
 
     int promotions;

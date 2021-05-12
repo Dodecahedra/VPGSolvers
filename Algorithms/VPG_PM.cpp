@@ -15,26 +15,26 @@ VPG_PM::VPG_PM(VPGame *game)
     :game(game) {
     U = vector<map<ProgM, ConfSet, progmcomparator>>(game->n_nodes);
     // Initialize U
-    l = findHighestPriority();
+    d = findHighestPriority();
     for (int i = 0; i < game->n_nodes; i++) {
         auto m =  map<ProgM, ConfSet, progmcomparator>();
-        vector<int> n = vector<int>(l+1);
+        vector<int> n = vector<int>(d + 1);
         m[n] = game->bigC;
         U[i] = m;
     }
-    Z = vector<int>(l+1);
-    M = vector<int>(l+1);
-    T = vector<int>(l+1);
+    bottom = vector<int>(d + 1);
+    M = vector<int>(d + 1);
+    top = vector<int>(d + 1);
     // Compute the progress measure M.
     for (int i = 0; i < game->n_nodes; i++) {
         int pr = game->priority[i];
         if (pr%2!=0) {
             M[pr]++;
-            T[pr]++;
+            top[pr]++;
         }
     }
-    // We set T to be one higher than M.
-    T[0]++;
+    // We set top to be one higher than M.
+    top[0]++;
 }
 
 int VPG_PM::findHighestPriority() {
@@ -53,7 +53,7 @@ int VPG_PM::findHighestPriority() {
  */
 void VPG_PM::minProg(int k, pair<ProgM, ConfSet> phi, ProgM &m) {
     ProgM u = get<0>(phi);
-    if (u[0] == T[0]) { // If progress measure u=T, then set m=T and return.
+    if (u[0] == top[0]) { // If progress measure u=top, then set m=top and return.
         setTop(m);
         return;
     }
@@ -79,7 +79,7 @@ void VPG_PM::minProg(int k, pair<ProgM, ConfSet> phi, ProgM &m) {
     }
 }
 
-void VPG_PM::setTop(vector<int> &m) { for (int i = 0; i < T.size(); i++) m[i] = T[i]; }
+void VPG_PM::setTop(vector<int> &m) { for (int i = 0; i < top.size(); i++) m[i] = top[i]; }
 
 /**
  * Updates the progress measures of U[s] using the new mapping V. Updates the mapping if
@@ -188,7 +188,7 @@ void VPG_PM::fillInW(map<vector<int>, bdd, progmcomparator> &W) {
         all |= t.second;
     }
     ConfSet remainder = game->bigC - all;
-    if (remainder != emptyset) W[Z] |= remainder;
+    if (remainder != emptyset) W[bottom] |= remainder;
 }
 
 /**
@@ -225,14 +225,14 @@ void VPG_PM::updateU(map<ProgM, ConfSet, progmcomparator> &W, int s, bool &updat
 }
 
 /**
- * Go over U and look whether the vertex `i` is winning for odd (if `m=T`) or if it is won by
- * player even (`m!=T`) and write it to the `game`.
+ * Go over U and look whether the vertex `i` is winning for odd (if `m=top`) or if it is won by
+ * player even (`m!=top`) and write it to the `game`.
  */
 void VPG_PM::writeResult() {
     for (int i = 0; i < U.size(); i++) {
         auto t = U[i];
         for (const auto& ti : t) {
-            if (ti.first[0] == T[0]) { // U[t][i] = T
+            if (ti.first[0] == top[0]) { // U[t][i] = top
                 game->winning_1[i] |= ti.second;
             } else {
                 game->winning_0[i] |= ti.second;
@@ -264,15 +264,14 @@ void VPG_PM::run() {
             for (auto& p : U[target]) {
                 ConfSet psi = (p.second & game->edge_guards[guard]);
                 if (psi != emptyset) {
-                    ProgM m = vector<int>(l+1);
+                    ProgM m = vector<int>(d + 1);
                     minProg(game->priority[s], p, m);
                     V[m] |= psi;
                 }
             }
-            /* Compute W=MIN/MAX(W,V). */
-            if (game->owner[s]) { // Owner is odd
+            if (game->owner[s]) {
                 MAX(W, V);
-            } else { // Owner is even
+            } else {
                 MIN(W, V);
             }
         }
@@ -293,6 +292,5 @@ void VPG_PM::run() {
             }
         }
     }
-
     writeResult();
 }
