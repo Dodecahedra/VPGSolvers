@@ -156,7 +156,7 @@ int VPG_PP::getRegionStatus(int i, int p) {
     const int a  = p%2;
     VertexSetZlnk region_set = regions[p];
     // See if the region is closed in the subgame
-    int lowest_region = -1;
+    int lowest_region = max_prio+1;
     for (int j = 0; j < region_set.size(); j++) {
         if (region_set[j]) {
             if (game->owner[j] != a) {
@@ -167,8 +167,8 @@ int VPG_PP::getRegionStatus(int i, int p) {
                     while (it != region[get<0>(v)].end()) {
                         if ((vertex_confs & edge_guard & it->second) != emptyset) {
                             int region_priority = it->first;
-                            if (region_priority < p) return -2; // Found a reachable vertex of lower priority.
-                            if ((region_priority < lowest_region || lowest_region == -1)
+                            if (region_priority > p) return -2; // Found a reachable vertex of lower priority.
+                            if ((region_priority > lowest_region || lowest_region == max_prio+1)
                                     && region_priority != p) {
                                 lowest_region = region_priority;
                             }
@@ -240,7 +240,7 @@ void VPG_PP::setDominion(int p) {
 
 
 void VPG_PP::run() {
-    max_prio = game->priority[0];
+    max_prio = game->priority[game->n_nodes-1];
     regions = std::vector<VertexSetZlnk>(max_prio+1);
     region =  std::vector<std::unordered_map<int, ConfSet>>(game->n_nodes);
     strategy = std::vector<std::unordered_map<int, int>>(game->n_nodes);
@@ -279,7 +279,7 @@ void VPG_PP::run() {
                 if (c == -2) {
                     // Region is open, so continue search in subgame G<p.
                     break;
-                } else if (c == -1) {
+                } else if (c == max_prio+1) {
                     /* We found a closed region, i.e. dominion. Set the vertices in the dominion
                      * as solved and restart the algorithm, but with the dominion D removed from the game. */
                     setDominion(p);

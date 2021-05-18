@@ -39,10 +39,10 @@ void VPGame::sort() {
     mapping = std::vector<int>(n_nodes);
     constructMapping(mapping);
     /* Using the identity mapping we just constructed, we now make a permutation mapping, where
-     * we sort in descending order of priority. */
+     * we sort in ascending order of priority. */
     std::sort(mapping.begin(), mapping.end(),
          [&](const int &a, const int &b) {
-            return priority[a] > priority[b];
+            return priority[a] < priority[b];
         }
     );
     // Now sort all our values according to this mapping.
