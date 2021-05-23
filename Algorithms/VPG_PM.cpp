@@ -151,7 +151,6 @@ void VPG_PM::MAX(map<ProgM, ConfSet, progmcomparator> &W, map<ProgM, ConfSet, pr
         for (auto v = V.rbegin(); v != V.rend(); ++v) {
             if (!ProgMComp(v->first, m)) {
                 if ((v->second & c) != emptyset) {
-                    auto f = v->second & c;
                     // We can lift (part of) w to a higher measure
                     N[m] -= v->second & c; // Technically we don't need to do the intersection, but just to be safe.
                     N[v->first] |= v->second & c;
@@ -203,8 +202,8 @@ void VPG_PM::updateU(map<ProgM, ConfSet, progmcomparator> &W, int s, bool &updat
         }
         N[m] |= c;
     }
+    U[s].clear();
     for (auto &n : N) {
-        U[s].erase(n.first);
         if (n.second != emptyset) {
             U[s][n.first] |= n.second;
         }
