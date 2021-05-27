@@ -259,7 +259,6 @@ void VPG_PP::setDominion(int p) {
             }
             /* We check that the configuration that we solved is */ assert(((*C)[i] & region[i][p]) == emptyset);
             /* removed from the underlying game. */                 assert((*C)[i] == emptyset ? (*V)[i] == false : (*V)[i] == true);
-//            region[i].erase(p); // Remove the vertex-configuration pair
         }
     }
     /* Reset the {@code region} and {@code regions} arrays */
