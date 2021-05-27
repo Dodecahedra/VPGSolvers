@@ -41,13 +41,13 @@ protected:
     void resetRegion(int p);
     bool setupRegion(int p);
     void setDominion(int p);
-    int getRegionStatus(int i, int p);
+    int getRegionStatus(int p);
     void reportRegion();
     void printState();
 
-    void attractQueue(int p);
+    void attractQueue(int priority);
 
-    void removeFromBigV(int p);
+    void removeFromBigV(int priority);
 
-    void setUpRegion();
+    void setUpRegions();
 };
