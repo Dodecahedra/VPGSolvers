@@ -23,11 +23,14 @@ VPG_PP::VPG_PP(VPGame *game):
     promotions = 0;
     max_prio = game->priority[0];
     inverse = new int[max_prio+1];
+    regions = new VertexSetZlnk[max_prio+1];
+    region = new std::unordered_map<int, ConfSet>[game->n_nodes];
+    strategy = new std::unordered_map<int, int>[game->n_nodes];
 }
 
 /**
- *
- * @param p
+ * Compute the attractor of subgame defined in `region[p]`.
+ * @param p priority of the region we are computing the attractor for.
  */
 void VPG_PP::attract(int p) {
     removeFromBigV(p);
@@ -48,10 +51,6 @@ void VPG_PP::removeFromBigV(int priority) {
     }
 }
 
-/**
- *
- * @param priority
- */
 void VPG_PP::attractQueue(int priority) {
     queue<int> qq;
 #ifdef VertexSetZlnkIsBitVector
@@ -114,7 +113,7 @@ void VPG_PP::attractQueue(int priority) {
             {
                 (*V)[vi] = false;
             }
-            // Ff we attracted anything we need to reevaluate the predecessors of vi
+            // If we attracted anything we need to reevaluate the predecessors of vi
             qq.push(vi);
         }
     }
@@ -168,25 +167,11 @@ int VPG_PP::getRegionStatus(int p) {
     VertexSetZlnk region_set = regions[p];
     // See if the region is closed in the subgame
     int lowest_region = -1;
-    for (int j = 0; j < region_set.size(); j++) {
+    for (int j = 0; j < game->n_nodes; j++) {
         if (region_set[j]) {
             if (game->owner[j] != a) {
                 ConfSet vertex_confs = region[j][p];
-                for (auto &v : game->out_edges[j]) {
-                    ConfSet edge_guard = game->edge_guards[get<1>(v)];
-                    auto it = region[get<0>(v)].begin();
-                    while (it != region[get<0>(v)].end()) {
-                        if ((vertex_confs & edge_guard & it->second) != emptyset) {
-                            int region_priority = it->first;
-                            if (region_priority < p) return -2; // Found a reachable vertex of lower priority.
-                            if ((region_priority < lowest_region || lowest_region == -1)
-                                    && region_priority != p) {
-                                lowest_region = region_priority;
-                            }
-                        }
-                        it++;
-                    }
-                }
+                lowest_region = findLowestNeighbor(p, lowest_region, j, vertex_confs);
             }
         }
     }
@@ -194,7 +179,37 @@ int VPG_PP::getRegionStatus(int p) {
 }
 
 /**
- * Promote region[from] to priority of regions[to]. Then computes attractor.
+ * Finds the lowest neighbor of vertex {@code j} by looping over all of the out-neighbors and finding the lowest
+ * out-neighbor that is part of a higher region. If one of the out-neighbors is part of a region with lower priority
+ * than {@code p}, we return -2. If {@code j} has no out-neighbors of lower priority, we return -1.
+ * @param p priority of the region under consideration.
+ * @param lowest_region current lowest region that we have found.
+ * @param j index of the vertex we are looking at.
+ * @param vertex_confs the configuration set of vertex {@code j}.
+ * @return lowest region which is higher than p reachable from a vertex in region[p], -1 if region[p]
+ *         is closed or -2 if the region is open.
+ */
+int VPG_PP::findLowestNeighbor(int p, int lowest_region, int j, const bdd &vertex_confs) {
+    for (auto &v : game->out_edges[j]) {
+        ConfSet edge_guard = game->edge_guards[get<1>(v)];
+        auto it = region[get<0>(v)].begin();
+        while (it != region[get<0>(v)].end()) {
+            if ((vertex_confs & edge_guard & it->second) != emptyset) {
+                int region_priority = it->first;
+                if (region_priority < p) return -2;
+                if ((region_priority < lowest_region || lowest_region == -1)
+                        && region_priority != p) {
+                    lowest_region = region_priority;
+                }
+            }
+            it++;
+        }
+    }
+    return lowest_region;
+}
+
+/**
+ * Promote region[from] to priority of regions[to]. Then computes attractor of the new `region[to]`.
  * @param from priority that we are promoting from.
  * @param to priority we are promoting to.
  */
@@ -219,7 +234,8 @@ void VPG_PP::promote(int from, int to) {
 }
 
 /**
- * Set all vertices with configurations Confs to solved for player p%2.
+ * Compute the dominion of closed region of priority {@code p}, by computing the attractor of region[p],
+ * afterwards, add the configurations in region[p] to the winning set of p&1. Afterwards, resets the region functions.
  * @param p the priority of the region that is solved.
  */
 void VPG_PP::setDominion(int p) {
@@ -241,12 +257,12 @@ void VPG_PP::setDominion(int p) {
             } else {
                 game->winning_0[i] |= region[i][p];
             }
-            /* We check that the configuration that we solved is */   assert(((*C)[i] & region[i][p]) == emptyset);
-            /* removed from the underlying game. */   assert((*C)[i] == emptyset ? (*V)[i] == false : (*V)[i] == true);
-            region[i].erase(p); // Remove the vertex-configuration pair
+            /* We check that the configuration that we solved is */ assert(((*C)[i] & region[i][p]) == emptyset);
+            /* removed from the underlying game. */                 assert((*C)[i] == emptyset ? (*V)[i] == false : (*V)[i] == true);
+//            region[i].erase(p); // Remove the vertex-configuration pair
         }
     }
-    /* Remove regions from the game. */
+    /* Reset the {@code region} and {@code regions} arrays */
     for (int i = 0; i < max_prio+1; i++) regions[i] = VertexSetZlnk(game->n_nodes);
     for(int i = 0; i < game->n_nodes; i++) {
         region[i].clear();
@@ -256,14 +272,8 @@ void VPG_PP::setDominion(int p) {
 
 
 void VPG_PP::run() {
-    // TODO: See if we can replace these static-sized vectors with arrays.
-    regions = std::vector<VertexSetZlnk>(max_prio+1);
-    region =  std::vector<std::unordered_map<int, ConfSet>>(game->n_nodes);
-    strategy = std::vector<std::unordered_map<int, int>>(game->n_nodes);
-
     // Initialise region array, where initially the region of vertex i points to fullset to priority of i.
     setUpRegions();
-
     for (int i = 0; i < max_prio+1; i++) regions[i] = VertexSetZlnk(game->n_nodes);
 
     /** We loop over the vertices and do PP algorithm. We first construct a vector with all the
@@ -282,8 +292,8 @@ void VPG_PP::run() {
             if (region[i][p] != emptyset) reset = false;
             i++;
         }
-        if (reset) continue; // We skip if the region we are considering has no vertex enabled
 
+        if (reset) continue; // We skip if the region we are considering has no vertex enabled
 
         /* Now create the region by attracting nearby vertices and see if the region is
          * open or closed. */
@@ -315,6 +325,10 @@ void VPG_PP::run() {
     }
 }
 
+/**
+ * After resetting the {@code region} array, we make sure that the array is reset such that
+ * `region[i][pr(i)]` points to the set of configurations still in the underlying game.
+ */
 void VPG_PP::setUpRegions() {
     for (int i = 0; i < game->n_nodes; i++) {
         VPG_PP::region[i][game->priority[i]] = (*C)[i];

@@ -32,9 +32,9 @@ protected:
     int *inverse;
     int max_prio;
 
-    vector<VertexSetZlnk> regions;
-    vector<unordered_map<int, int>> strategy;
-    vector<unordered_map<int, ConfSet>> region;
+    VertexSetZlnk *regions;
+    unordered_map<int, int> *strategy;
+    unordered_map<int, ConfSet> *region;
 
     void attract(int p);
     void promote(int from, int to);
@@ -48,4 +48,6 @@ protected:
     void removeFromBigV(int priority);
 
     void setUpRegions();
+
+    int findLowestNeighbor(int p, int lowest_region, int j, const bdd &vertex_confs);
 };
