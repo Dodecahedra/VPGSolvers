@@ -68,7 +68,7 @@ int main(int argc, char** argv) {
     auto end = std::chrono::high_resolution_clock::now();
     auto running_time = std::chrono::duration_cast<std::chrono::nanoseconds>(end - start);
     if (sort) game.permute(game.mapping);
-    cout << "Solving took: " << running_time.count() << " ns" << std::endl;
+    cout << "Solving time: " << running_time.count() << " ns" << std::endl;
     printSolution(game.winning_0, 0);
     printSolution(game.winning_1, 1);
 }
