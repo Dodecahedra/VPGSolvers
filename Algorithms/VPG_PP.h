@@ -19,6 +19,7 @@ public:
     void run();
 
     int promotions;
+    int attractions;
 
 protected:
     /** Current game we are solving */

@@ -21,6 +21,7 @@ VPG_PP::VPG_PP(VPGame *game):
         (*C)[i] = game->bigC;
     }
     promotions = 0;
+    attractions = 0;
     max_prio = game->priority[game->n_nodes-1];
     inverse = new int[max_prio+1];
     regions = new VertexSetZlnk[max_prio+1];
@@ -35,6 +36,7 @@ VPG_PP::VPG_PP(VPGame *game):
 void VPG_PP::attract(int p) {
     removeFromBigV(p);
     attractQueue(p);
+    attractions++;
 }
 
 /**
@@ -322,6 +324,9 @@ void VPG_PP::run() {
             continue;
         }
     }
+    cout << "Algorithm finished with:" << std::endl;
+    cout << promotions << " promotions and" << std::endl;
+    cout << attractions << " attractions" << std::endl;
 }
 
 /**
