@@ -42,8 +42,6 @@ protected:
     bool setupRegion(int p);
     void setDominion(int p);
     int getRegionStatus(int p);
-    void reportRegion();
-    void printState();
 
     void attractQueue(int priority);
 
