@@ -89,7 +89,8 @@ void VPG_PP::attractQueue(int priority) {
                         ConfSet s = game->bigC;
                         ConfSet s2 = game->bigC;
                         s -= game->edge_guards[edge_index(j)];
-                        s2 &= region[target][priority];
+//                        s2 &= region[target][priority]; // assert((game->bigC - (*C)[target]) == (game->bigC & region[target][priority]));
+                        s2 -= (*C)[target];
                         s |= s2;
                         attracted &= s;
                 }
@@ -126,6 +127,8 @@ void VPG_PP::attractQueue(int priority) {
  * @param p priority of region to be reset.
  * @summary Goes over all <vertex,Conf> pairs in regions[p] and resets those to the original priority.
  *  Does not reset if priority of the vertex is set to -1 (if solved).
+ *  TODO:
+ *      Look into making resetting more efficient.
  */
 void VPG_PP::resetRegion(int p) {
     VertexSetZlnk vertex_set = regions[p];
@@ -151,6 +154,8 @@ void VPG_PP::resetRegion(int p) {
  * Given a region[p], compute its attractor. This removes the attracted region from the underlying game.
  * @param p priority of the region we are creating.
  * @return true if we successfully setup a region, false if the initial region is empty.
+ * TODO:
+ *  Compare this function with the one in oink. Has some significant differences.
  */
 bool VPG_PP::setupRegion(int p) {
     if (regions[p] == emptyvertexset) return false;
@@ -171,9 +176,27 @@ int VPG_PP::getRegionStatus(int p) {
     int lowest_region = max_prio + 1;
     for (int j = 0; j < game->n_nodes; j++) {
         if (region_set[j]) {
-            if (game->owner[j] != a) {
+            if (game->owner[j] != a) { // Vertex owned by opponent, check what the lowest neighbor is.
                 ConfSet vertex_confs = region[j][p];
                 lowest_region = findLowestNeighbor(p, lowest_region, j, vertex_confs);
+            } else {
+                // Vertex owned by the current player, region is open if we are forced to leave the region.
+                // TODO: if we set the strategy array properly, this will be a simple check...
+                bool neigborinregion = false;
+                int reachable_neighbors = 0;
+                for (auto &v : game->out_edges[j]) {
+                    ConfSet edge_guard = game->edge_guards[edge_index(v)];
+                    ConfSet vertex_confs = region[j][p];
+                    if ((vertex_confs & edge_guard & region[target(v)][p]) != emptyset) { // We have an edge to a vertex which is in the region.
+                        reachable_neighbors++;
+                        if (region_set[target(v)]) {
+                            neigborinregion = true;
+                            break;
+                        }
+                    }
+                }
+                // We have found no neighbor who is part of the region, so return that region is open.
+                if (!neigborinregion && reachable_neighbors > 0) return -2;
             }
         }
     }
@@ -193,12 +216,12 @@ int VPG_PP::getRegionStatus(int p) {
  */
 int VPG_PP::findLowestNeighbor(int p, int lowest_region, int j, const bdd &vertex_confs) {
     for (auto &v : game->out_edges[j]) {
-        ConfSet edge_guard = game->edge_guards[get<1>(v)];
-        auto it = region[get<0>(v)].begin();
-        while (it != region[get<0>(v)].end()) {
+        ConfSet edge_guard = game->edge_guards[edge_index(v)];
+        auto it = region[target(v)].begin();
+        while (it != region[target(v)].end()) {
             if ((vertex_confs & edge_guard & it->second) != emptyset) {
                 int region_priority = it->first;
-                if (region_priority > p) return -2;
+                if (region_priority > p) return -2; // Region is not closed
                 if ((region_priority > lowest_region || lowest_region == max_prio + 1)
                         && region_priority != p) {
                     lowest_region = region_priority;
@@ -284,7 +307,6 @@ void VPG_PP::run() {
     promotions = 0;
     while (i < game->n_nodes) {
         int p = game->priority[i];
-        inverse[p] = i; // Keep index in case we promote and need to reset.
         bool reset = true;
         // Look for all vertices of priority p that still have some confs enabled
         while (i < game->n_nodes && game->priority[i] == p) {
@@ -293,6 +315,7 @@ void VPG_PP::run() {
             if (region[i][p] != emptyset) reset = false;
             i++;
         }
+        inverse[p] = i; // Keep index in case we promote and need to reset.
 
         if (reset) continue; // We skip if the region we are considering has no vertex enabled
 
@@ -323,6 +346,9 @@ void VPG_PP::run() {
             // Region was empty, go to the next priority.
             continue;
         }
+    }
+    for (int i = 0; i < game->n_nodes; i++) {
+        assert((*C)[i]==emptyset);
     }
     cout << "Algorithm finished with:" << std::endl;
     cout << promotions << " promotions and" << std::endl;
