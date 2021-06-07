@@ -6,6 +6,8 @@
 #include "unordered_map"
 #include "VPG_PP.h"
 
+#define prio game->priority
+
 /**
  * Implementation of the priority promotion algorithm for VPGs.
  */
@@ -169,65 +171,65 @@ bool VPG_PP::setupRegion(int p) {
  * @return  -2 if region is open, -1 if region is closed and priority c if we
  *          can promote the region to priority c.
  */
-int VPG_PP::getRegionStatus(int p) {
+int VPG_PP::getRegionStatus(int i, int p) {
     const int a  = p%2;
     VertexSetZlnk region_set = regions[p];
     // See if the region is closed in the subgame
-    int lowest_region = max_prio + 1;
-    for (int j = 0; j < game->n_nodes; j++) {
-        if (region_set[j]) {
-            if (game->owner[j] != a) { // Vertex owned by opponent, check what the lowest neighbor is.
+    // Iterate over all the possible escapes
+    for (int j = i-1; j >= 0 && prio[j]==p; j--) {
+        if (!region_set[j]) {
+            continue; // Vertex is not in the region
+        } else if (game->owner[j] == a) {
+            // Check there is no out-edge going to a different region.
+            // TODO: If we set `strategy` vector, we can skip this check and just see if we have a strategy for that vertex.
+            bool vertex_closed = true;
+            for (auto &v : game->out_edges[j]) { // TODO: See if region is closed. Currently not computed properly.
+                ConfSet edge_guard = game->edge_guards[edge_index(v)];
                 ConfSet vertex_confs = region[j][p];
-                lowest_region = findLowestNeighbor(p, lowest_region, j, vertex_confs);
-            } else {
-                // Vertex owned by the current player, region is open if we are forced to leave the region.
-                // TODO: if we set the strategy array properly, this will be a simple check...
-                bool neigborinregion = false;
-                int reachable_neighbors = 0;
-                for (auto &v : game->out_edges[j]) {
-                    ConfSet edge_guard = game->edge_guards[edge_index(v)];
-                    ConfSet vertex_confs = region[j][p];
-                    if ((vertex_confs & edge_guard & region[target(v)][p]) != emptyset) { // We have an edge to a vertex which is in the region.
-                        reachable_neighbors++;
-                        if (region_set[target(v)]) {
-                            neigborinregion = true;
-                            break;
-                        }
+                if (region_set[target(v)]) {
+                    if ((vertex_confs & edge_guard & region[target(v)][p]) != emptyset) {
+                        vertex_closed = true;
+                        break;
+                    }
+                } else {
+                    if ((vertex_confs & edge_guard & (*C)[target(v)]) != emptyset) {
+                        vertex_closed = false;
                     }
                 }
-                // We have found no neighbor who is part of the region, so return that region is open.
-                if (!neigborinregion && reachable_neighbors > 0) return -2;
             }
-        }
-    }
-    return lowest_region;
-}
-
-/**
- * Finds the lowest neighbor of vertex {@code j} by looping over all of the out-neighbors and finding the lowest
- * out-neighbor that is part of a higher region. If one of the out-neighbors is part of a region with lower priority
- * than {@code p}, we return -2. If {@code j} has no out-neighbors of lower priority, we return -1.
- * @param p priority of the region under consideration.
- * @param lowest_region current lowest region that we have found.
- * @param j index of the vertex we are looking at.
- * @param vertex_confs the configuration set of vertex {@code j}.
- * @return lowest region which is higher than p reachable from a vertex in region[p], -1 if region[p]
- *         is closed or -2 if the region is open.
- */
-int VPG_PP::findLowestNeighbor(int p, int lowest_region, int j, const bdd &vertex_confs) {
-    for (auto &v : game->out_edges[j]) {
-        ConfSet edge_guard = game->edge_guards[edge_index(v)];
-        auto it = region[target(v)].begin();
-        while (it != region[target(v)].end()) {
-            if ((vertex_confs & edge_guard & it->second) != emptyset) {
-                int region_priority = it->first;
-                if (region_priority > p) return -2; // Region is not closed
-                if ((region_priority > lowest_region || lowest_region == max_prio + 1)
-                        && region_priority != p) {
-                    lowest_region = region_priority;
+            // We have found no neighbor who is part of the region, so return that the region is open.
+            if (!vertex_closed) return -2;
+        } else {
+            for (auto &v : game->out_edges[j]) {
+                ConfSet edge_guard = game->edge_guards[edge_index(v)];
+                ConfSet vertex_confs = region[j][p];
+                if (!region_set[target(v)]) {
+                    if ((vertex_confs & edge_guard & (*C)[target(v)]) != emptyset) { // Reachable vertex outside current region.
+                        return -2;
+                    }
                 }
             }
-            it++;
+        }
+    } // Region is closed, now look if we can find a lower region to promote to.
+    int lowest_region = max_prio + 1;
+    for (int j = 0; j < game->n_nodes; j++) {
+        if (region_set[j] && game->owner[j] != a) {
+            // Found an opponent vertex, check if we can go to a lower region.
+            for (auto &v : game->out_edges[j]) {
+                ConfSet edge_guard = game->edge_guards[edge_index(v)];
+                ConfSet vertex_confs = region[j][p];
+                auto it = region[target(v)].begin();
+                while (it != region[target(v)].end()) {
+                    if ((vertex_confs & edge_guard & it->second) != emptyset) {
+                        int region_priority = it->first;
+                        if ((region_priority > lowest_region || lowest_region == max_prio + 1)
+                            && region_priority < p) {
+                            lowest_region = region_priority;
+                        }
+                    }
+                    it++;
+                }
+            }
         }
     }
     return lowest_region;
@@ -279,6 +281,7 @@ void VPG_PP::setDominion(int p) {
         if (v[i]) {
             if (a) {
                 game->winning_1[i] |= region[i][p];
+                cout << region[i][p] << endl;
             } else {
                 game->winning_0[i] |= region[i][p];
             }
@@ -324,7 +327,7 @@ void VPG_PP::run() {
         if (setupRegion(p)) {
             // We created a region, check whether it is open/closed.
             while (true) {
-                int regionStatus = getRegionStatus(p);
+                int regionStatus = getRegionStatus(i, p);
                 if (regionStatus == -2) {
                     // Region is open, so continue search in subgame G<p.
                     break;
@@ -347,8 +350,8 @@ void VPG_PP::run() {
             continue;
         }
     }
-    for (int i = 0; i < game->n_nodes; i++) {
-        assert((*C)[i]==emptyset);
+    for (int j = 0; j < game->n_nodes; j++) {
+        assert((*C)[j]==emptyset);
     }
     cout << "Algorithm finished with:" << std::endl;
     cout << promotions << " promotions and" << std::endl;

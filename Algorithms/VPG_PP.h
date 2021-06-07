@@ -42,7 +42,7 @@ protected:
     void resetRegion(int p);
     bool setupRegion(int p);
     void setDominion(int p);
-    int getRegionStatus(int p);
+    int getRegionStatus(int i, int p);
 
     void attractQueue(int priority);
 
