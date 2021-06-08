@@ -50,5 +50,7 @@ protected:
 
     void setUpRegions();
 
-    int findLowestNeighbor(int p, int lowest_region, int j, const bdd &vertex_confs);
+    int getEscapeSetStatus(int i, int p, const int a, const VectorBoolOptimized &region_set);
+
+    int findPromotableRegion(int p, const int a, const VectorBoolOptimized &region_set);
 };

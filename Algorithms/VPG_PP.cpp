@@ -91,7 +91,6 @@ void VPG_PP::attractQueue(int priority) {
                         ConfSet s = game->bigC;
                         ConfSet s2 = game->bigC;
                         s -= game->edge_guards[edge_index(j)];
-//                        s2 &= region[target][priority]; // assert((game->bigC - (*C)[target]) == (game->bigC & region[target][priority]));
                         s2 -= (*C)[target];
                         s |= s2;
                         attracted &= s;
@@ -129,8 +128,6 @@ void VPG_PP::attractQueue(int priority) {
  * @param p priority of region to be reset.
  * @summary Goes over all <vertex,Conf> pairs in regions[p] and resets those to the original priority.
  *  Does not reset if priority of the vertex is set to -1 (if solved).
- *  TODO:
- *      Look into making resetting more efficient.
  */
 void VPG_PP::resetRegion(int p) {
     VertexSetZlnk vertex_set = regions[p];
@@ -156,8 +153,6 @@ void VPG_PP::resetRegion(int p) {
  * Given a region[p], compute its attractor. This removes the attracted region from the underlying game.
  * @param p priority of the region we are creating.
  * @return true if we successfully setup a region, false if the initial region is empty.
- * TODO:
- *  Compare this function with the one in oink. Has some significant differences.
  */
 bool VPG_PP::setupRegion(int p) {
     if (regions[p] == emptyvertexset) return false;
@@ -176,41 +171,12 @@ int VPG_PP::getRegionStatus(int i, int p) {
     VertexSetZlnk region_set = regions[p];
     // See if the region is closed in the subgame
     // Iterate over all the possible escapes
-    for (int j = i-1; j >= 0 && prio[j]==p; j--) {
-        if (!region_set[j]) {
-            continue; // Vertex is not in the region
-        } else if (game->owner[j] == a) {
-            // Check there is no out-edge going to a different region.
-            // TODO: If we set `strategy` vector, we can skip this check and just see if we have a strategy for that vertex.
-            bool vertex_closed = true;
-            for (auto &v : game->out_edges[j]) { // TODO: See if region is closed. Currently not computed properly.
-                ConfSet edge_guard = game->edge_guards[edge_index(v)];
-                ConfSet vertex_confs = region[j][p];
-                if (region_set[target(v)]) {
-                    if ((vertex_confs & edge_guard & region[target(v)][p]) != emptyset) {
-                        vertex_closed = true;
-                        break;
-                    }
-                } else {
-                    if ((vertex_confs & edge_guard & (*C)[target(v)]) != emptyset) {
-                        vertex_closed = false;
-                    }
-                }
-            }
-            // We have found no neighbor who is part of the region, so return that the region is open.
-            if (!vertex_closed) return -2;
-        } else {
-            for (auto &v : game->out_edges[j]) {
-                ConfSet edge_guard = game->edge_guards[edge_index(v)];
-                ConfSet vertex_confs = region[j][p];
-                if (!region_set[target(v)]) {
-                    if ((vertex_confs & edge_guard & (*C)[target(v)]) != emptyset) { // Reachable vertex outside current region.
-                        return -2;
-                    }
-                }
-            }
-        }
-    } // Region is closed, now look if we can find a lower region to promote to.
+    if (getEscapeSetStatus(i, p, a, region_set) == -2) return -2;
+    // Region is closed, now look if we can find a lower region to promote to.
+    return findPromotableRegion(p, a, region_set);
+}
+
+int VPG_PP::findPromotableRegion(int p, const int a, const VectorBoolOptimized &region_set) {
     int lowest_region = max_prio + 1;
     for (int j = 0; j < game->n_nodes; j++) {
         if (region_set[j] && game->owner[j] != a) {
@@ -218,21 +184,46 @@ int VPG_PP::getRegionStatus(int i, int p) {
             for (auto &v : game->out_edges[j]) {
                 ConfSet edge_guard = game->edge_guards[edge_index(v)];
                 ConfSet vertex_confs = region[j][p];
-                auto it = region[target(v)].begin();
-                while (it != region[target(v)].end()) {
-                    if ((vertex_confs & edge_guard & it->second) != emptyset) {
-                        int region_priority = it->first;
+                auto regions_v = region[target(v)].begin();
+                while (regions_v != region[target(v)].end()) {
+                    if ((vertex_confs & edge_guard & regions_v->second) != emptyset) {
+                        int region_priority = regions_v->first;
                         if ((region_priority > lowest_region || lowest_region == max_prio + 1)
                             && region_priority < p) {
                             lowest_region = region_priority;
                         }
                     }
-                    it++;
+                    regions_v++;
                 }
             }
         }
     }
     return lowest_region;
+}
+
+int VPG_PP::getEscapeSetStatus(int i, int p, const int a, const VectorBoolOptimized &region_set) {
+    for (int j = i - 1; j >= 0 && prio[j] == p; j--) {
+        if (!region_set[j]) {
+            continue; // Vertex is not in the region
+        } else if (game->owner[j] == a) {
+            // Check there is no out-edge going to a different region.
+            ConfSet escape = bdd_false();
+           for (auto &v : game->out_edges[j]) {
+               ConfSet edge_guard = game->edge_guards[edge_index(v)];
+               escape |= ((*C)[target(v)] & edge_guard & region[j][p]);
+               escape -= (region[target(v)][p] & edge_guard & region[j][p]);
+           }
+           if (escape != emptyset) return -2;
+        } else {
+            ConfSet escape = bdd_false();
+            for (auto &v : game->out_edges[j]) {
+                ConfSet edge_guard = game->edge_guards[edge_index(v)];
+                if (((*C)[target(v)] & edge_guard & region[j][p]) != emptyset) return -2;
+            }
+            if (escape != emptyset) return -2;
+        }
+    }
+    return -1; // Region is closed
 }
 
 /**
@@ -250,11 +241,8 @@ void VPG_PP::promote(int from, int to) {
     }
     regions[to] |= promote_region;
     regions[from] = emptyvertexset;
-    for (int i = 0; i < game->n_nodes; i++) {
-        assert(region[i][from] == emptyset);
-    }
 
-    for (int i = from; i < to; i++) {
+    for (int i = from; i > to; i--) {
         resetRegion(i);
     }
     attract(to);
@@ -268,7 +256,7 @@ void VPG_PP::promote(int from, int to) {
 void VPG_PP::setDominion(int p) {
     /* First, we add all the regions back to the game, to compute the attractor in the entire
      * subgame V. */
-    for (int i = 0; i < game->n_nodes; i ++) {
+    for (int i = 0; i < game->n_nodes; i++) {
         for (auto &t : region[i]) {
             (*V)[i] = (*V)[i] || regions[t.first][i];
             (*C)[i] |= t.second;
@@ -281,12 +269,9 @@ void VPG_PP::setDominion(int p) {
         if (v[i]) {
             if (a) {
                 game->winning_1[i] |= region[i][p];
-                cout << region[i][p] << endl;
             } else {
                 game->winning_0[i] |= region[i][p];
             }
-            /* We check that the configuration that we solved is */ assert(((*C)[i] & region[i][p]) == emptyset);
-            /* removed from the underlying game. */                 assert((*C)[i] == emptyset ? (*V)[i] == false : (*V)[i] == true);
         }
     }
     /* Reset the {@code region} and {@code regions} arrays */
@@ -350,12 +335,13 @@ void VPG_PP::run() {
             continue;
         }
     }
-    for (int j = 0; j < game->n_nodes; j++) {
-        assert((*C)[j]==emptyset);
-    }
     cout << "Algorithm finished with:" << std::endl;
     cout << promotions << " promotions and" << std::endl;
     cout << attractions << " attractions" << std::endl;
+    delete[] inverse;
+    delete[] regions;
+    delete[] region;
+    delete[] strategy;
 }
 
 /**
