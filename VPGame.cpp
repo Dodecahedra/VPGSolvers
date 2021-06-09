@@ -14,6 +14,7 @@
 #include <cstring>
 #include <unordered_set>
 #include <algorithm>
+#include "VariabilityParityGames/Algorithms/zlnkVPG.h"
 
 #include "VPGame.h"
 #define PARSER_LINE_SIZE  16777216
@@ -85,6 +86,51 @@ void VPGame::permute(std::vector<int> &mapping) {
             std::swap(mapping[i], mapping[swp]);
         }
 
+    }
+}
+
+/**
+ * Pre-processing step:
+ * Eliminate self-loops in the graph by computing their attractor set and removing them from the game.
+ * @param self_loops
+ */
+void VPGame::elimateSelfLoops() {
+    auto* vertices_0 = new VertexSetZlnk(n_nodes);
+    auto* confset_0 = new vector<ConfSet>(n_nodes);
+    auto* vertices_1 = new VertexSetZlnk(n_nodes);
+    auto* confset_1 = new vector<ConfSet>(n_nodes);
+
+    for (int i = 0; i < n_nodes; i++) {
+        for (auto e : out_edges[i]) {
+            int v = target(e);
+            if (v != i) continue;
+            ConfSet guard = edge_guards[edge_index(e)];
+            if (owner[v] != (priority[v]&1)) {
+                for (auto ei : out_edges[v]) {
+                    if (edge_index(ei) != edge_index(e)) {
+                        guard -= edge_guards[edge_index(ei)];
+                    }
+                }
+            }
+            if (priority[v]&1) {
+                (*confset_1)[v] |= guard;
+                if (guard != emptyset) (*vertices_1)[v] = true;
+            } else {
+                (*confset_0)[v] |= guard;
+                if (guard != emptyset) (*vertices_0)[v] = true;
+            }
+        }
+    }
+    zlnkVPG solver(this);
+    solver.attr(0, vertices_0, confset_0);
+    solver.attr(1, vertices_1, confset_1);
+    for(int i = 0; i < n_nodes; i++) {
+        if (vertices_0) {
+            winning_0[i] |= (*confset_0)[i];
+        }
+        if (vertices_1) {
+            winning_1[i] |= (*confset_1)[i];
+        }
     }
 }
 
@@ -313,8 +359,6 @@ void VPGame::parseVertex(char *line) {
             out_edges[index].resize(outindex + 1);
             out_edges[index][outindex] = std::make_tuple(target, guardindex);
 
-            /* FIXME:
-             *  Read in in_edges. Currently sorting of these in_edges is incorrect. */
             int inindex = in_edges[target].size();
             in_edges[target].resize(inindex+1);
             in_edges[target][inindex] = std::make_tuple(index, guardindex);
