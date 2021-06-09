@@ -4,7 +4,7 @@
 
 #ifndef VPGSOLVERS_VPG_PP_H
 #define VPGSOLVERS_VPG_PP_H
-#include "../VPGame.h"
+#include "../VariabilityParityGames/VPGame.h"
 #include "../Conf.h"
 #include "unordered_map"
 
