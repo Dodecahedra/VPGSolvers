@@ -3,7 +3,7 @@
 //
 
 #include <chrono>
-#include "VPGame.h"
+#include "VariabilityParityGames/VPGame.h"
 #include "Algorithms/VPG_PP.h"
 #include "Algorithms/VPG_PM.h"
 
@@ -50,10 +50,18 @@ void printSolution(vector<ConfSet> winning, int player) {
 
 int main(int argc, char** argv) {
     VPGame game;
-    // Read in the game
+    bool detect_loops = false;
+    if (argc > 3) {
+        if (*argv[3] == 'L') { // Enable self-loop elimination
+            detect_loops = true;
+        }
+    }
+    /* Parse the Variability Parity Game from input and, optionally, collect
+     * vertices with a self-loop in the vector. */
     game.parseVPGFromFile(argv[1]);
+
+    if (detect_loops) game.elimateSelfLoops(); // Solve self-loops.
     bool sort = false;
-    // Make sure the game is sorted
     auto start = std::chrono::high_resolution_clock::now();
     /** Select solver we are running */
     if (*argv[2] == 'M') {

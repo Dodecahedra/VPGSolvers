@@ -12,7 +12,7 @@ add_executable(VPGSolvers_PP
         Conf.h
         VariabilityParityGames/Algorithms/Datastructures/ConfSetExplicit.h
         VariabilityParityGames/Algorithms/Datastructures/ConfSetExplicit.cpp
-        VariabilityParityGames/Algorithms/Datastructures/bintree.cpp VariabilityParityGames/Algorithms/Datastructures/bintree.h VariabilityParityGames/Algorithms/Datastructures/UnorderedVertexSet.cpp VariabilityParityGames/Algorithms/Datastructures/UnorderedVertexSet.h VariabilityParityGames/Algorithms/Datastructures/VectorBoolOptimized.cpp VariabilityParityGames/Algorithms/Datastructures/VectorBoolOptimized.h)
+        VariabilityParityGames/Algorithms/Datastructures/bintree.cpp VariabilityParityGames/Algorithms/Datastructures/bintree.h VariabilityParityGames/Algorithms/Datastructures/UnorderedVertexSet.cpp VariabilityParityGames/Algorithms/Datastructures/UnorderedVertexSet.h VariabilityParityGames/Algorithms/Datastructures/VectorBoolOptimized.cpp VariabilityParityGames/Algorithms/Datastructures/VectorBoolOptimized.h VariabilityParityGames/Algorithms/zlnkVPG.h VariabilityParityGames/Algorithms/zlnkVPG.cpp)
 add_executable(VPGSolvers_PM
         main.cpp
         VPGame.h VPGame.cpp
