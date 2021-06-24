@@ -6,6 +6,7 @@
 #include "VariabilityParityGames/VPGame.h"
 #include "Algorithms/VPG_PP.h"
 #include "Algorithms/VPG_PM.h"
+#include "Algorithms/VPG_SCC.h"
 
 unordered_map<string, string> winningmap;
 string vertex;
@@ -71,6 +72,9 @@ int main(int argc, char** argv) {
         sort = true;
         game.sort();
         VPG_PP solver(&game);
+        solver.run();
+    } else if(*argv[2] == 'S') {
+        VPG_SCC solver(&game);
         solver.run();
     }
     auto end = std::chrono::high_resolution_clock::now();
