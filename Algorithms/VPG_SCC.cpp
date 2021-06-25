@@ -14,6 +14,7 @@ VPG_SCC::VPG_SCC(VPGame *game):
         (*V)[i] = true;
         (*C)[i] = game->bigC;
     }
+    emptyvertexset = VertexSetZlnk(game->n_nodes);
 }
 
 void VPG_SCC::tarjanTSCC(vector<unordered_set<int>> *tscc_map) {
@@ -29,7 +30,8 @@ void VPG_SCC::tarjanTSCC(vector<unordered_set<int>> *tscc_map) {
     }
     /* TODO:
      *  We can make this more efficient since we know that once we found a non-terminal element,
-     *  all SCCs after it are non-terminal, until we hit the index of the new `strongconnect` search. */
+     *  all SCCs after it are non-terminal, until we hit the index of a new `strongconnect` search (since tarjan
+     *  returns SCCs in a reverse ordered DAG). */
     tscc_map->erase(
             std::remove_if(
                     tscc_map->begin(),
@@ -91,10 +93,38 @@ void VPG_SCC::strongconnect(int v, int *idx, std::stack<int> *S,
 }
 
 void VPG_SCC::run() {
-    /* TODO:
-     *  Iteratively compute the terminal SCCs and solve them using Zielonka or Priority Promotion. Adjust
-     *  the underlying game (*V and *C) and recompute terminal SCCs until we have solved the entire game. */
-    vector<unordered_set<int>> map = vector<unordered_set<int>>();
-    tarjanTSCC(&map);
+    zlnkVPG G(game, V, C); // Create solver for the entire game
+    // While there are enabled vertices enabled, keep calculating the terminal sccs and solve them
+    while ((*V) != emptyvertexset) {
+        vector<unordered_set<int>> map = vector<unordered_set<int>>();
+        tarjanTSCC(&map);
+        auto *subV = new VertexSetZlnk(game->n_nodes);
+        auto *subC = new vector<ConfSet>(game->n_nodes);
+        for (const auto& m : map) {
+            for (auto i : m) {
+                (*subV)[i] = true;
+                (*subC)[i] |= (*C)[i];
+            }
+        }
+        zlnkVPG subgame(game, subV, subC);
+        auto *W0 = new VertexSetZlnk(game->n_nodes);    auto *W1 = new VertexSetZlnk(game->n_nodes);
+        auto *W0C = new vector<ConfSet>(game->n_nodes); auto *W1C = new vector<ConfSet>(game->n_nodes);
+        for (int i = 0; i < game->n_nodes; i++) {
+            (*W0C)[i] = emptyset;
+            (*W1C)[i] = emptyset;
+        }
+        subgame.solve(W0, W0C, W1, W1C);
+        // Compute the attractor in the entire game and then set the attracted vertices and confs as solved for player 0/1.
+        G.attr(0, W0, W0C);
+        G.attr(1, W1, W1C);
+        for (int i = 0; i < game->n_nodes; i++) {
+            if ((*W0)[i]) {
+                game->winning_0[i] |= (*W0C)[i];
+            }
+            if ((*W1)[i]) {
+                game->winning_1[i] |= (*W1C)[i];
+            }
+        }
+    }
 
 }

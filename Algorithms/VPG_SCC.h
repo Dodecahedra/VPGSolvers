@@ -8,6 +8,7 @@
 #include <stack>
 #include <queue>
 #include "../VariabilityParityGames/VPGame.h"
+#include "../VariabilityParityGames/Algorithms/zlnkVPG.h"
 
 class VPG_SCC {
 public:
@@ -17,6 +18,7 @@ public:
 protected:
     VPGame *game;
     VertexSetZlnk *V;
+    VertexSetZlnk emptyvertexset;
     vector<ConfSet> *C;
     int* index;
     int* lowlink;
@@ -25,10 +27,6 @@ protected:
     void tarjanTSCC(vector<unordered_set<int>> *tscc_map);
 
     void strongconnect(int v, int *idx, stack<int> *S, vector<unordered_set<int>> *tscc_map);
-
-    void remove_non_terminal(vector<unordered_set<int>> *tscc_map, queue<int> &t_indices);
-
-    bool is_terminal(unordered_set<int> *set);
 
     bool is_terminal(unordered_set<int> &p);
 };
