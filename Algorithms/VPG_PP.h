@@ -16,10 +16,12 @@
 class VPG_PP {
 public:
     VPG_PP(VPGame *game);
+    VPG_PP(VPGame *game, VertexSetZlnk *subV, vector<ConfSet> *subC);
     void run();
 
     int promotions;
     int attractions;
+    long attractor_time = 0;
 
 protected:
     /** Current game we are solving */

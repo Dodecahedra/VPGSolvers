@@ -61,26 +61,42 @@ int main(int argc, char** argv) {
      * vertices with a self-loop in the vector. */
     game.parseVPGFromFile(argv[1]);
 
-    if (detect_loops) game.elimateSelfLoops(); // Solve self-loops.
+    long elimination_time;
+    if (detect_loops) {
+        auto start = std::chrono::high_resolution_clock::now();
+        game.elimateSelfLoops(); // Solve self-loops.
+        auto end = std::chrono::high_resolution_clock::now();
+        elimination_time =
+                std::chrono::duration_cast<std::chrono::nanoseconds>(end - start)
+                        .count();
+    }
     bool sort = false;
     auto start = std::chrono::high_resolution_clock::now();
+    cout << "Vertices: " << game.n_nodes << endl;
+    cout << "Edges: " << game.edge_guards.size() << endl;
     /** Select solver we are running */
     if (*argv[2] == 'M') {
         VPG_PM solver (&game);
         solver.run();
+        if (detect_loops) cout << "=<3>=:" << elimination_time << std::endl;
     } else if (*argv[2] == 'P') {
         sort = true;
         game.sort();
         VPG_PP solver(&game);
         solver.run();
-    } else if(*argv[2] == 'S') {
+        if (detect_loops) cout << "=<5>=:" << elimination_time << std::endl;
+    } else if (*argv[2] == 'S') {
         VPG_SCC solver(&game);
         solver.run();
+        if (detect_loops) cout << "=<6>=:" << elimination_time << std::endl;
     }
     auto end = std::chrono::high_resolution_clock::now();
-    auto running_time = std::chrono::duration_cast<std::chrono::nanoseconds>(end - start);
+    long running_time =
+            std::chrono::duration_cast<std::chrono::nanoseconds>(end - start)
+                    .count();
     if (sort) game.permute(game.mapping);
-    cout << "Solving time: " << running_time.count() << " ns" << std::endl;
+    cout << "Solving time: " << running_time << " ns" << std::endl;
+    cout << "*-----------------------------------*" << endl;
     printSolution(game.winning_0, 0);
     printSolution(game.winning_1, 1);
 }
