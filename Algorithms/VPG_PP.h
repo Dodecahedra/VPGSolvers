@@ -16,6 +16,7 @@
 class VPG_PP {
 public:
     VPG_PP(VPGame *game);
+    VPG_PP(VPGame *game, VertexSetZlnk *subV, vector<ConfSet> *subC);
     void run();
 
     int promotions;

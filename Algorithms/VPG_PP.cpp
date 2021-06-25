@@ -31,6 +31,20 @@ VPG_PP::VPG_PP(VPGame *game):
     strategy = new std::unordered_map<int, int>[game->n_nodes];
 }
 
+VPG_PP::VPG_PP(VPGame *game, VertexSetZlnk *subV, vector<ConfSet> *subC):
+    game(game),
+    V(subV),
+    C(subC) {
+    emptyvertexset = VertexSetZlnk(game->n_nodes);
+    promotions = 0;
+    attractions = 0;
+    max_prio = game->priority[game->n_nodes-1];
+    inverse = new int[max_prio+1];
+    regions = new VertexSetZlnk[max_prio+1];
+    region = new std::unordered_map<int, ConfSet>[game->n_nodes];
+    strategy = new std::unordered_map<int, int>[game->n_nodes];
+}
+
 /**
  * Compute the attractor of subgame defined in `region[p]`.
  * @param p priority of the region we are computing the attractor for.
@@ -292,7 +306,7 @@ void VPG_PP::run() {
      * vertices with the same priority. Afterwards, {@code i} always points to the first vertex with
      * priority < p. */
     int i = 0;
-    promotions = 0;
+    int searches = 0;
     while (i < game->n_nodes) {
         int p = game->priority[i];
         bool reset = true;
@@ -321,6 +335,7 @@ void VPG_PP::run() {
                      * as solved and restart the algorithm, but with the dominion D removed from the game. */
                     setDominion(p);
                     i = 0; // Restart loop from the beginning
+                    searches++;
                     break;
                 } else {
                     /* We found a region which can be promoted. Promote the region to priority {@code regionStatus}. */
@@ -338,6 +353,7 @@ void VPG_PP::run() {
     cout << "Algorithm finished with:" << std::endl;
     cout << promotions << " promotions and" << std::endl;
     cout << attractions << " attractions" << std::endl;
+    cout << searches << " searches" << std::endl;
     delete[] inverse;
     delete[] regions;
     delete[] region;
