@@ -60,18 +60,18 @@ int main(int argc, char** argv) {
     /* Parse the Variability Parity Game from input and, optionally, collect
      * vertices with a self-loop in the vector. */
     game.parseVPGFromFile(argv[1]);
+    auto start = std::chrono::high_resolution_clock::now();
 
     long elimination_time;
     if (detect_loops) {
-        auto start = std::chrono::high_resolution_clock::now();
+        auto start_elim = std::chrono::high_resolution_clock::now();
         game.elimateSelfLoops(); // Solve self-loops.
-        auto end = std::chrono::high_resolution_clock::now();
+        auto end_elim = std::chrono::high_resolution_clock::now();
         elimination_time =
-                std::chrono::duration_cast<std::chrono::nanoseconds>(end - start)
+                std::chrono::duration_cast<std::chrono::nanoseconds>(end_elim - start_elim)
                         .count();
     }
     bool sort = false;
-    auto start = std::chrono::high_resolution_clock::now();
     cout << "Vertices: " << game.n_nodes << endl;
     cout << "Edges: " << game.edge_guards.size() << endl;
     /** Select solver we are running */
