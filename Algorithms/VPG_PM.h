@@ -19,6 +19,14 @@ class VPG_PM {
 public:
     VPG_PM(VPGame *game);
     void run();
+    /**
+     * Amount of `Lift` operations we have performed.
+     */
+    int lifts = 0;
+    /**
+     * Amount of times a lift operation led to a progress measure actually being updated.
+     */
+    int upgrades = 0;
 
 protected:
     /** Parity Game we are solving. */

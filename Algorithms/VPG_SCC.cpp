@@ -4,6 +4,7 @@
 
 
 #include <algorithm>
+#include <chrono>
 #include "VPG_SCC.h"
 
 VPG_SCC::VPG_SCC(VPGame *game):
@@ -97,7 +98,12 @@ void VPG_SCC::run() {
     // While there are enabled vertices enabled, keep calculating the terminal sccs and solve them
     while ((*V) != emptyvertexset) {
         vector<unordered_set<int>> map = vector<unordered_set<int>>();
-        tarjanTSCC(&map);
+        auto start = std::chrono::high_resolution_clock::now();
+        tarjanTSCC(&map); tarjan_calls++;
+        auto end = std::chrono::high_resolution_clock::now();
+        tarjan_time +=
+                std::chrono::duration_cast<std::chrono::nanoseconds>(end - start)
+                        .count();
         auto *subV = new VertexSetZlnk(game->n_nodes);
         auto *subC = new vector<ConfSet>(game->n_nodes);
         for (const auto& m : map) {
@@ -113,10 +119,16 @@ void VPG_SCC::run() {
             (*W0C)[i] = emptyset;
             (*W1C)[i] = emptyset;
         }
-        subgame.solve(W0, W0C, W1, W1C);
+        start = std::chrono::high_resolution_clock::now();
+        subgame.solve(W0, W0C, W1, W1C); subgames_solved++;
+        attractors += subgame.attractions;
         // Compute the attractor in the entire game and then set the attracted vertices and confs as solved for player 0/1.
-        G.attr(0, W0, W0C);
-        G.attr(1, W1, W1C);
+        G.attr(0, W0, W0C); attractors++;
+        G.attr(1, W1, W1C); attractors++;
+        end = std::chrono::high_resolution_clock::now();
+        solving_time +=
+                std::chrono::duration_cast<std::chrono::nanoseconds>(end - start)
+                        .count();
         for (int i = 0; i < game->n_nodes; i++) {
             if ((*W0)[i]) {
                 game->winning_0[i] |= (*W0C)[i];
@@ -126,5 +138,10 @@ void VPG_SCC::run() {
             }
         }
     }
-
+    cout << "*-----------------------------------*" << endl;
+    cout << "=<1>=:" << tarjan_calls << endl;
+    cout << "=<2>=:" << subgames_solved << endl;
+    cout << "=<3>=:" << attractors << endl;
+    cout << "=<4>=:" << tarjan_time << endl;
+    cout << "=<5>=:" << solving_time << endl;
 }

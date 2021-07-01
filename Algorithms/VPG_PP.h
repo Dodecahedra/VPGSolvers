@@ -21,6 +21,7 @@ public:
 
     int promotions;
     int attractions;
+    long attractor_time = 0;
 
 protected:
     /** Current game we are solving */

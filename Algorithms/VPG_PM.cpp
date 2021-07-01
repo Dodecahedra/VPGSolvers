@@ -266,6 +266,7 @@ void VPG_PM::run() {
          * If we updated one of the values in U[s], `updated` will be set to true. */
         updateU(W, s, updated);
         if(updated) {
+            upgrades++;
             /* We check if our new mapping is different than we mapping we already had
              * for U[s]. If this is the case, we update U[s] with W. */
             for (auto tii : game->in_edges[s]) {
@@ -276,6 +277,10 @@ void VPG_PM::run() {
                 }
             }
         }
+        lifts++;
     }
+    cout << "*-----------------------------------*" << endl;
+    cout << "=<1>=:" << lifts << endl;
+    cout << "=<2>=:" << upgrades << endl;
     writeResult();
 }
