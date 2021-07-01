@@ -92,8 +92,8 @@ int main(int argc, char** argv) {
             std::chrono::duration_cast<std::chrono::nanoseconds>(end - start)
                     .count();
     if (sort) game.permute(game.mapping);
-    if (detect_loops) cout << "Eliminating self-loops: " << elimination_time << " ns" << std::endl;
     cout << "Solving time: " << running_time << " ns" << std::endl;
+    if (detect_loops) cout << "=<0>=:" << elimination_time << std::endl;
     cout << "*-----------------------------------*" << endl;
     printSolution(game.winning_0, 0);
     printSolution(game.winning_1, 1);
