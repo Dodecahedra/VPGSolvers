@@ -96,6 +96,7 @@ int main(int argc, char** argv) {
                     .count();
     if (sort) game.permute(game.mapping);
     cout << "Solving time: " << running_time << " ns" << std::endl;
+    if (detect_loops) cout << "=<0>=:" << elimination_time << std::endl;
     cout << "*-----------------------------------*" << endl;
     printSolution(game.winning_0, 0);
     printSolution(game.winning_1, 1);
