@@ -36,7 +36,6 @@ protected:
     int max_prio;
 
     VertexSetZlnk *regions;
-    unordered_map<int, int> *strategy;
     unordered_map<int, ConfSet> *region;
 
     void attract(int p);

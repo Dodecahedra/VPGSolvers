@@ -29,7 +29,6 @@ VPG_PP::VPG_PP(VPGame *game):
     inverse = new int[max_prio+1];
     regions = new VertexSetZlnk[max_prio+1];
     region = new std::unordered_map<int, ConfSet>[game->n_nodes];
-    strategy = new std::unordered_map<int, int>[game->n_nodes];
 }
 
 VPG_PP::VPG_PP(VPGame *game, VertexSetZlnk *subV, vector<ConfSet> *subC):
@@ -43,7 +42,6 @@ VPG_PP::VPG_PP(VPGame *game, VertexSetZlnk *subV, vector<ConfSet> *subC):
     inverse = new int[max_prio+1];
     regions = new VertexSetZlnk[max_prio+1];
     region = new std::unordered_map<int, ConfSet>[game->n_nodes];
-    strategy = new std::unordered_map<int, int>[game->n_nodes];
 }
 
 /**
@@ -102,7 +100,6 @@ void VPG_PP::attractQueue(int priority) {
                 attracted = (*C)[vi];
                 attracted &= region[vii][priority];
                 attracted &= game->edge_guards[gi];
-                strategy[vi].emplace(priority, vii);
             } else {
                 attracted = (*C)[vi];
                 for(auto & j : game->out_edges[vi]){
@@ -156,7 +153,6 @@ void VPG_PP::resetRegion(int p) {
             region[i][priority_i] |= region[i][p];
             /* If we have a conf set for vertex {@code i}, make sure that vertex {@code i} is added to the
              * {@code regions} vertex set. */
-            strategy[i].erase(p);
             if (priority_i != p) {
                 regions[p][i] = false;
                 region[i].erase(p);
@@ -363,7 +359,6 @@ void VPG_PP::run() {
     delete[] inverse;
     delete[] regions;
     delete[] region;
-    delete[] strategy;
 }
 
 /**
