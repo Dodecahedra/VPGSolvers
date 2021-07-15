@@ -87,7 +87,7 @@ int main(int argc, char** argv) {
         VPG_PP solver(&game);
         solver.run();
         end = std::chrono::high_resolution_clock::now();
-        if (detect_loops) cout << "=<5>=:" << elimination_time << std::endl;
+        if (detect_loops) cout << "=<6>=:" << elimination_time << std::endl;
     } else if (*argv[2] == 'S') {
         VPG_SCC solver(&game);
         auto *W0bigV = new VertexSetZlnk(game.n_nodes);
