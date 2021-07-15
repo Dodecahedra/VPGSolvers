@@ -273,6 +273,10 @@ void VPG_SCC::solve(VertexSetZlnk *W0bigV, vector<ConfSet> *W0vc, VertexSetZlnk 
                 auto *W1subV = new VertexSetZlnk(game->n_nodes);
                 auto *W1subvc = new vector<ConfSet>(game->n_nodes);
                 subgameH.solve(W0subV, W0subvc, W1subV, W1subvc);
+                tarjan_calls += subgameH.tarjan_calls;
+                tarjan_time += subgameH.tarjan_time;
+                attracting += subgameH.attracting;
+                attractions += subgameH.attractions;
                 // Create subV and subvc to store solution of the subgame we solved
                 VertexSetZlnk *WMesubV;
                 vector<ConfSet> *WMevc;
@@ -303,6 +307,10 @@ void VPG_SCC::solve(VertexSetZlnk *W0bigV, vector<ConfSet> *W0vc, VertexSetZlnk 
                     fill(W0subvc->begin(), W0subvc->end(), emptyset);
                     fill(W1subvc->begin(), W1subvc->end(), emptyset);
                     subgame.solve(W0subV, W0subvc, W1subV, W1subvc);
+                    tarjan_calls += subgame.tarjan_calls;
+                    tarjan_time += subgame.tarjan_time;
+                    attracting += subgame.attracting;
+                    attractions += subgame.attractions;
                     unify(WOpsubV, WOpvc, B, bc);
                 }
                 attr(0, W0subV, W0subvc);

@@ -23,18 +23,12 @@ public:
      */
     int tarjan_calls = 0;
     /**
-     * Amount of subgames we have solved using Zielonka's algorithm.
-     */
-    int subgames_solved = 0;
-    /**
      * Time (ns) spent on computing the SCCs of the VPG.
      */
     long tarjan_time = 0;
     /**
-     * Time (ns) spent on solving the subgames and computing the attractor set.
+     * Time spend in attractor set calculation
      */
-    long solving_time = 0;
-
     long attracting = 0;
 
     int attractions = 0;

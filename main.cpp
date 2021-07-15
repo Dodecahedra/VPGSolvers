@@ -98,7 +98,11 @@ int main(int argc, char** argv) {
         end = std::chrono::high_resolution_clock::now();
        game.winning_0 = (*W0vc);
        game.winning_1 = (*W1vc);
-        if (detect_loops) cout << "=<6>=:" << elimination_time << std::endl;
+       cout << "=<1>=:" << solver.tarjan_calls << std::endl;
+       cout << "=<2>=:" << solver.tarjan_time<< std::endl;
+       cout << "=<3>=:" << solver.attracting << std::endl;
+        cout << "=<4>=:" << solver.attractions << std::endl;
+        if (detect_loops) cout << "=<5>=:" << elimination_time << std::endl;
     }
     long running_time =
             std::chrono::duration_cast<std::chrono::nanoseconds>(end - start)
