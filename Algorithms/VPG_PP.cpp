@@ -182,7 +182,6 @@ bool VPG_PP::setupRegion(int p) {
  *          can promote the region to priority c.
  */
 int VPG_PP::getRegionStatus(int i, int p) {
-    auto start = std::chrono::high_resolution_clock::now();
     const int a  = p%2;
     VertexSetZlnk region_set = regions[p];
     // See if the region is closed in the subgame
@@ -190,8 +189,6 @@ int VPG_PP::getRegionStatus(int i, int p) {
     if (getEscapeSetStatus(i, p, a, region_set) == -2) return -2;
     // Region is closed, now look if we can find a lower region to promote to.
     return findPromotableRegion(p, a, region_set);
-    auto end = std::chrono::high_resolution_clock::now();
-    escape_set_time += std::chrono::duration_cast<std::chrono::nanoseconds>(end - start).count();
 }
 
 int VPG_PP::findPromotableRegion(int p, const int a, const VectorBoolOptimized &region_set) {
@@ -330,7 +327,10 @@ void VPG_PP::run() {
         if (setupRegion(p)) {
             // We created a region, check whether it is open/closed.
             while (true) {
+                auto start = std::chrono::high_resolution_clock::now();
                 int regionStatus = getRegionStatus(i, p);
+                auto end = std::chrono::high_resolution_clock::now();
+                escape_set_time += std::chrono::duration_cast<std::chrono::nanoseconds>(end - start).count();
                 if (regionStatus == -2) {
                     // Region is open, so continue search in subgame G<p.
                     break;
