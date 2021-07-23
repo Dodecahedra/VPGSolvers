@@ -312,11 +312,16 @@ void VPG_SCC::solve(VertexSetZlnk *W0bigV, vector<ConfSet> *W0vc, VertexSetZlnk 
                     attracting += subgame.attracting;
                     attractions += subgame.attractions;
                     unify(WOpsubV, WOpvc, B, bc);
+                    delete B; delete bc;
                 }
                 attr(0, W0subV, W0subvc);
                 attr(1, W1subV, W1subvc);
                 unify(W0bigV, W0vc, W0subV, W0subvc);
                 unify(W1bigV, W1vc, W1subV, W1subvc);
+                // Delete local variables we no longer use...
+                delete bigA; delete ac;
+                delete W0subV; delete W1subV; delete W0subvc; delete W1subvc;
+                delete subV; delete subC;
             }
         }
     }

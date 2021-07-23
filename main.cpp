@@ -60,6 +60,11 @@ int main(int argc, char** argv) {
     /* Parse the Variability Parity Game from input and, optionally, collect
      * vertices with a self-loop in the vector. */
     game.parseVPGFromFile(argv[1]);
+
+    bdd_gbc();
+    // enable cache after parsing
+    bdd_setcacheratio(200);
+    bdd_gbc();
     auto start = std::chrono::high_resolution_clock::now();
 
     long elimination_time;
