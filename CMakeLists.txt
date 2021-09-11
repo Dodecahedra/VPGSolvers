@@ -4,9 +4,17 @@ project(VPGSolvers)
 set(CMAKE_CXX_STANDARD 14)
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY_RELEASE ../bin/)
 
+include(FetchContent)
+FetchContent_Declare(
+        googletest
+        GIT_REPOSITORY https://github.com/google/googletest.git
+        GIT_TAG        703bd9caab50b139428cea1aaff9974ebee5742e # release-1.10.0
+)
+FetchContent_MakeAvailable(googletest)
+
 add_executable(VPGSolvers
         main.cpp
-        VPGame.h VPGame.cpp
+        VPGame.h VariabilityParityGames/VPGame.cpp
         Algorithms/VPG_PP.h Algorithms/VPG_PP.cpp
         Algorithms/VPG_PM.h Algorithms/VPG_PM.cpp
         Conf.h
@@ -21,3 +29,14 @@ find_library(BDD_LIB bdd lib)
 
 target_compile_definitions(VPGSolvers PUBLIC subsetbdd)
 target_link_libraries(VPGSolvers LINK_PUBLIC ${BDD_LIB})
+enable_testing()
+
+add_executable(
+        VPG_tests
+        test/VPG_PP_test.ccp
+        test/VPG_PM_test.cpp
+        test/VPG_SCC_test.cpp)
+target_compile_definitions(VPG_tests PUBLIC subsetbdd)
+target_link_libraries(VPG_tests gtest_main)
+include(GoogleTest)
+gtest_discover_tests(VPG_tests)
