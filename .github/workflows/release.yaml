@@ -10,10 +10,6 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
-        with:
-          ssh-key: ${{ secrets.SECRET_KEY }}
-          submodules: recursive
       - name: Get cache
         uses: actions/cache@v2
         with:
@@ -24,12 +20,16 @@ jobs:
         run: |
           cd ..
           git clone https://github.com/jgcoded/BuDDy.git
-          cd BuDDy
-          sudo bash ./configure
       - name: Install BuDDy
         run: |
-          make
-          make install
+          cd ../BuDDy
+          sudo bash ./configure
+          sudo make
+          sudo make install
+      - uses: actions/checkout@v2
+        with:
+          ssh-key: ${{ secrets.SECRET_KEY }}
+          submodules: recursive
       - name: Configure
         run: cmake -S . -B build
       - name: Build
