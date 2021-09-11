@@ -1,0 +1,43 @@
+name: run-tests
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          ssh-key: ${{ secrets.SECRET_KEY }}
+          submodules: recursive
+      - name: Get cache
+        uses: actions/cache@v2
+        with:
+          path: ~/BuDDy
+          key: ${{ runner.os }}-buddycache
+      - name: Setup BuDDy
+        if: steps.cache.outputs.cache-hit != 'true'
+        run: |
+          cd ..
+          git clone https://github.com/jgcoded/BuDDy.git
+          cd BuDDy
+          sudo bash ./configure
+      - name: Install BuDDy
+        run: |
+          make
+          make install
+      - name: Configure
+        run: cmake -S . -B build
+      - name: Build
+        run: cmake --build build
+      - name: Run Tests
+        run: ./build/VPG_tests
+      - name: Upload binary
+        uses: actions/upload-artifact@v2
+        with:
+          name: VPGSolver
+          path: ./build/VPGSolvers
