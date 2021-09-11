@@ -33,7 +33,7 @@ enable_testing()
 
 add_executable(
         VPG_tests
-        test/VPG_PP_test.cc
+        test/VPG_PP_test.ccp
         test/VPG_PM_test.cpp
         test/VPG_SCC_test.cpp)
 target_compile_definitions(VPG_tests PUBLIC subsetbdd)
