@@ -8,10 +8,10 @@
 INSTANTIATE_TEST_SUITE_P(VPG_tests,
                          VPGame_test,
                          testing::Values(
-                                 std::tuple<std::string, std::string>("/home/koen/Code/VPGSolvers/test/resources/0VPG",
-                                                                      "/home/koen/Code/VPGSolvers/test/resources/0SOL"),
-                                 std::tuple<std::string, std::string>("/home/koen/Code/VPGSolvers/test/resources/1VPG",
-                                                                      "/home/koen/Code/VPGSolvers/test/resources/1SOL")
+                                 std::tuple<std::string, std::string>("./test/resources/0VPG",
+                                                                      "./test/resources/0SOL"),
+                                 std::tuple<std::string, std::string>("./test/resources/1VPG",
+                                                                      "./test/resources/1SOL")
                          ));
 
 /**
