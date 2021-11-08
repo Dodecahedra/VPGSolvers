@@ -51,10 +51,32 @@ void printSolution(vector<ConfSet> winning, int player) {
 
 int main(int argc, char** argv) {
     VPGame game;
+    if (string(argv[1]) == "-h") {
+        cout << "            = VPGSolver version 1.0 =\n" <<
+                "----------------------------------------------------\n" <<
+                "Usage: VPGSolver [FILE] [SOLVER] [LOOPS]\n" <<
+                " FILE: utf-8 encoded file containing a VPG\n" <<
+                " SOLVER: Any of the following solvers:\n" <<
+                "   P: Priority Promotion algorithm\n" <<
+                "   S: SCC Decomposition algorithm\n" <<
+                "   M: Small Progress Measures algorithm\n" <<
+                " LOOPS: Add `L` option to eliminate self loops\n" <<
+                "\n" <<
+                "Example: `VPGSolver eVPG P` runs Priority Promotion on the file `eVPG`"
+            << std::endl;
+        return 0;
+    }
+    if (argc < 3) {
+        cout << "Error: not enough arguments" << std::endl;
+        return 1;
+    }
     bool detect_loops = false;
     if (argc > 3) {
         if (*argv[3] == 'L') { // Enable self-loop elimination
             detect_loops = true;
+        } else {
+            cout << "Error: " << *argv[3] << " is not a valid command option" << std::endl;
+            return 1;
         }
     }
     /* Parse the Variability Parity Game from input and, optionally, collect
@@ -109,6 +131,9 @@ int main(int argc, char** argv) {
        cout << "=<3>=:" << solver.attracting << std::endl;
         cout << "=<4>=:" << solver.attractions << std::endl;
         if (detect_loops) cout << "=<5>=:" << elimination_time << std::endl;
+    } else {
+        cout << "Error: invalid option: " << *argv[2] << std::endl;
+        return 1;
     }
     long running_time =
             std::chrono::duration_cast<std::chrono::nanoseconds>(end - start)
