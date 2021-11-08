@@ -9,10 +9,11 @@ The definitions and implementations of the algorithms[^1] can be found in the `.
 - Recursive algorithm with tight SCC integration (`SCC`)
 - Small Progress Measures (`PM`)
 ## Building
-To build and use the solvers, first checkout the repository including the submodule with
+To build and use the solvers, first checkout the repository including the submodule with (does require a git ssh key)
 ``` sh
 git clone --recurse-submodules https://github.com/Dodecahedra/VPGSolvers.git
 ```
+
 
 Next we'll need `cmake`, [`BuDDy`](https://sourceforge.net/projects/buddy/) (v2.4) and a `C++14` compliant compiler
 to build the binaries.
