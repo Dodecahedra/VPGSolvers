@@ -3,7 +3,7 @@
 
 Variability Parity games are a generalisation of parity games that can be used to verify products in a Software 
 Product Line. This repository contains the implementations of all the algorithms described in the thesis 
-``[New algorithms and heuristics for Variability Parity Games](./VPGs.pdf)''.
+``[New algorithms and heuristics for Variability Parity Games](https://www.dropbox.com/s/ibrzt0mpanw8tx5/VPGs.pdf?dl=0)''.
 The definitions and implementations of the algorithms[^1] can be found in the `./Algorithms` directory, and include:
 - Priority Promotion (`PP`)
 - Recursive algorithm with tight SCC integration (`SCC`)
@@ -14,7 +14,8 @@ To build and use the solvers, first checkout the repository including the submod
 git clone --recurse-submodules https://github.com/Dodecahedra/VPGSolvers.git
 ```
 
-Next we'll need `cmake` and [`BuDDy`](https://sourceforge.net/projects/buddy/) (v2.4) to build the binaries.
+Next we'll need `cmake`, [`BuDDy`](https://sourceforge.net/projects/buddy/) (v2.4) and a `C++14` compliant compiler
+to build the binaries.
 
 After installing BuDDy (we recommend using the default library install paths `/usr/local/include` and `/usr/local/lib`)
 the binaries can be build with the command:
@@ -31,7 +32,7 @@ sample of VPGs. The command above will also compile a test binary (`VPG_tests`) 
 the `CLion` IDE using `CTest`.
 
 ## Miscellaneous files
-The [`games.tar`]() file contains all the individual games used when running experiments to compare the different
+The [`games.zip`](./games.zip) file contains all the individual games used when running experiments to compare the different
 algorithms (results of which can be found here 
 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.5637419.svg)](https://doi.org/10.5281/zenodo.5637419)).
 
