@@ -31,19 +31,6 @@ VPG_PP::VPG_PP(VPGame *game):
     region = new std::unordered_map<int, ConfSet>[game->n_nodes];
 }
 
-VPG_PP::VPG_PP(VPGame *game, VertexSetZlnk *subV, vector<ConfSet> *subC):
-    game(game),
-    V(subV),
-    C(subC) {
-    emptyvertexset = VertexSetZlnk(game->n_nodes);
-    promotions = 0;
-    attractions = 0;
-    max_prio = game->priority[game->n_nodes-1];
-    inverse = new int[max_prio+1];
-    regions = new VertexSetZlnk[max_prio+1];
-    region = new std::unordered_map<int, ConfSet>[game->n_nodes];
-}
-
 /**
  * Compute the attractor of subgame defined in `region[p]`.
  * @param p priority of the region we are computing the attractor for.
@@ -217,6 +204,7 @@ int VPG_PP::findPromotableRegion(int p, const int a, const VectorBoolOptimized &
 }
 
 int VPG_PP::getEscapeSetStatus(int i, int p, const int a, const VectorBoolOptimized &region_set) {
+    auto start = std::chrono::high_resolution_clock::now();
     for (int j = i - 1; j >= 0 && prio[j] == p; j--) {
         if (!region_set[j]) {
             continue; // Vertex is not in the region
@@ -238,6 +226,8 @@ int VPG_PP::getEscapeSetStatus(int i, int p, const int a, const VectorBoolOptimi
             if (escape != emptyset) return -2;
         }
     }
+    auto end = std::chrono::high_resolution_clock::now();
+    escape_set_time += std::chrono::duration_cast<std::chrono::nanoseconds>(end - start).count();
     return -1; // Region is closed
 }
 
@@ -327,10 +317,7 @@ void VPG_PP::run() {
         if (setupRegion(p)) {
             // We created a region, check whether it is open/closed.
             while (true) {
-                auto start = std::chrono::high_resolution_clock::now();
                 int regionStatus = getRegionStatus(i, p);
-                auto end = std::chrono::high_resolution_clock::now();
-                escape_set_time += std::chrono::duration_cast<std::chrono::nanoseconds>(end - start).count();
                 if (regionStatus == -2) {
                     // Region is open, so continue search in subgame G<p.
                     break;

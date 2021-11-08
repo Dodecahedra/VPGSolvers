@@ -59,7 +59,8 @@ int main(int argc, char** argv) {
     }
     /* Parse the Variability Parity Game from input and, optionally, collect
      * vertices with a self-loop in the vector. */
-    game.parseVPGFromFile(argv[1]);
+    auto *loops = new vector<int>();
+    game.parseVPGFromFile(argv[1], loops);
 
     bdd_gbc();
     // enable cache after parsing
@@ -70,7 +71,7 @@ int main(int argc, char** argv) {
     long elimination_time;
     if (detect_loops) {
         auto start_elim = std::chrono::high_resolution_clock::now();
-        game.elimateSelfLoops(); // Solve self-loops.
+        game.elimateSelfLoops(loops); // Solve self-loops.
         auto end_elim = std::chrono::high_resolution_clock::now();
         elimination_time =
                 std::chrono::duration_cast<std::chrono::nanoseconds>(end_elim - start_elim)
