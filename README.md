@@ -18,10 +18,11 @@ docker run -v {folder}:/data -it vpgsolver bash
 This will build a docker container with all the required dependencies, by using the mount option `-v` we can mount a folder on the host machine to the `/data` folder in the container. The solver can now be run with the following command: `/build/VPGSolver -h`. 
 
 ## Building
-To build and use the solvers, first checkout the repository including the submodule with
+To build and use the solvers, first checkout the repository including the submodule with (does require a git ssh key)
 ``` sh
 git clone --recurse-submodules https://github.com/Dodecahedra/VPGSolvers.git
 ```
+
 
 Next we'll need `cmake`, [`BuDDy`](https://sourceforge.net/projects/buddy/) (v2.4) and a `C++14` compliant compiler
 to build the binaries.
