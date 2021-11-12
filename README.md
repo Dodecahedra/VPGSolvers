@@ -8,6 +8,15 @@ The definitions and implementations of the algorithms[^1] can be found in the `.
 - Priority Promotion (`PP`)
 - Recursive algorithm with tight SCC integration (`SCC`)
 - Small Progress Measures (`PM`)
+
+## Running in Docker
+The easiest way[^2] to run the solver is by using docker. In order to run the solver use the following commands in the root directory
+```sh
+docker build -t vpgsolver .
+docker run -v {folder}:/data -it vpgsolver bash
+```
+This will build a docker container with all the required dependencies, by using the mount option `-v` we can mount a folder on the host machine to the `/data` folder in the container. The solver can now be run with the following command: `/build/VPGSolver -h`. 
+
 ## Building
 To build and use the solvers, first checkout the repository including the submodule with
 ``` sh
@@ -39,3 +48,4 @@ algorithms (results of which can be found here
 
 [^1]: This repository uses [VariabilityParityGames](https://github.com/SjefvanLoo/VariabilityParityGames) by Sjef van Loo
 as a base for representing and parsing Variability Parity Games.
+[^2]: Sadly the project does not currently work on MacOS..
